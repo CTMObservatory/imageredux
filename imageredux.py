@@ -7,8 +7,8 @@
 
 
 def examplefunction(arg1, arg2):
-    print("Hello World!")
+    return "Hello World!"
 
 
 if __name__ == '__main__':
-    examplefunction(2, 3)
+    print(examplefunction(2, 3))
