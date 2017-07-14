@@ -8,8 +8,8 @@ install:
   - pip install codecov
 
 script:
-  - python -m unittest discover
-  - coverage run --source imageredux.py -m unittest
+  - python tests/test_imageredux.py
+  - coverage run --source imageredux.py tests/test_imageredux.py
 
 after_success:
   - codecov

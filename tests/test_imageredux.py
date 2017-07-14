@@ -1,7 +1,12 @@
 import unittest
+import sys
+import os
+
+sys.path.append(os.path.abspath("."))
 import imageredux
 
-class TestAlign(unittest.TestCase):
+
+class TestImageRedux(unittest.TestCase):
     def setUp(self):
         pass
 
@@ -9,7 +14,7 @@ class TestAlign(unittest.TestCase):
         pass
 
     def test_examplefunction(self):
-        self.assertEqual(1, 1)
+        self.assertEqual(imageredux.examplefunction(1, 2), "Hello World!")
 
 
 if __name__ == "__main__":
