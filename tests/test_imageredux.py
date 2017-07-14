@@ -1,5 +1,5 @@
 import unittest
-
+import imageredux
 
 class TestAlign(unittest.TestCase):
     def setUp(self):
