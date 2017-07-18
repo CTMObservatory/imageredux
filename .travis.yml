@@ -1,0 +1,15 @@
+language: python
+
+python:
+  - "3.6"
+
+install:
+  - pip install ccdproc
+  - pip install codecov
+
+script:
+  - python tests/test_imageredux.py
+  - coverage run --source imageredux.py tests/test_imageredux.py
+
+after_success:
+  - codecov

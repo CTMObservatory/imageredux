@@ -7,7 +7,7 @@
 
 
 def examplefunction(arg1, arg2):
-    print("Hello World!")
+    return "Hello World!"
 
 def doDarkComb (darklist):
 	"This will combine darks to mke a darkmaster"
@@ -16,4 +16,4 @@ def doDarkComb (darklist):
 	return 'darkmaster.fits'
 
 if __name__ == '__main__':
-    examplefunction(2, 3)
+    print(examplefunction(2, 3))
