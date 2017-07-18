@@ -12,7 +12,6 @@ def examplefunction(arg1, arg2):
 def doDarkComb (darklist):
 	"This will combine darks to mke a darkmaster"
 	darkmaster = ccdproc.combine(darklist, output_file="darkmaster.fits", method="median", unit=u.adu)
-	
 	return 'darkmaster.fits'
 
 if __name__ == '__main__':
