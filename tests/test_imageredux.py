@@ -26,7 +26,7 @@ class TestImageRedux(unittest.TestCase):
 
     def test_doDarkComb(self):
         darkmaster_fname = imageredux.doDarkComb(self.darkfilenames)
-        self.assertTrue(os.path.exists("darkmaster_fname"))
+        self.assertTrue(os.path.exists(darkmaster_fname))
 
 
 if __name__ == "__main__":
