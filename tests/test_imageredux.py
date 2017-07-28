@@ -58,7 +58,7 @@ class TestRedux(unittest.TestCase):
         self.redux_name = imageredux.redux(self.image_name,
                                          self.dark_name,
                                          self.flat_name)
-        self.assertTrue(os.path.exists(reduced_image))
+        self.assertTrue(os.path.exists(self.redux_name))
 
 if __name__ == "__main__":
     unittest.main()
