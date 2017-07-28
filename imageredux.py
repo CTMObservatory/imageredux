@@ -23,7 +23,7 @@ def redux(image, masterDark, masterFlat):
     reduxFile = ccdproc.CCDData.read(image,unit="adu") # Read file
     masterDark = ccdproc.CCDData.read(masterDark, unit="adu")
     masterFlat = ccdproc.CCDData.read(masterFlat, unit="adu")
-    reduxFile = ccdproc.subtract_dark(reduxFile, masterDark, exposure_time = 30, exposure_unit = u.s) # Subtract Dark
+    reduxFile = ccdproc.subtract_dark(reduxFile, masterDark, exposure_time='exptime', exposure_unit = u.second) # Subtract Dark
     reduxFile = ccdproc.flat_correct(reduxFile, masterFlat) # Divide by Flat
     # Write fits file
     return reduxFile.write(image+'_redux.fits')
