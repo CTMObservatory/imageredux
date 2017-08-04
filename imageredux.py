@@ -8,9 +8,6 @@ import ccdproc
 from astropy import units as u
 from os.path import exists
 
-def examplefunction(arg1, arg2):
-    return "Hello World!"
-
 def doDarkComb (darklist):
 	"This will combine darks to mke a darkmaster"
 	darkmaster = ccdproc.combine(darklist, output_file="darkmaster.fits", method="median", unit=u.adu, clobber=True)
@@ -34,5 +31,4 @@ def redux(image, masterDark, masterFlat):
     return reduxFileName
 
 if __name__ == '__main__':
-    print(examplefunction(2, 3))
     redux('hatp27.fit','master_dark.fit','master_flat.fit')
