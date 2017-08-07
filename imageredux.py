@@ -25,6 +25,15 @@ def do_flat_combine(flat_list):
 
     return master_flat
 
+ # Subtract dark from flat
+def do_dark_subtract(master_dark, master_flat):
+
+    print("Subtracting dark from flat...")
+    flat_min_dark = ccdproc.subtract_dark(master_flat, master_dark, data_exposure=master_flat.header['exposure']*u.second, dark_exposure=master_dark.header['exposure']*u.second, scale=True)
+    ccdproc.fits_ccddata_writer(flat_min_dark, "flat-min-dark.fit")
+
+    return flat_min_dark
+
 # This Function takes a single image and reduces using dark and flat master.
 def redux(image, masterDark, masterFlat):
     reduxFileName = image.replace(".fit","_redux.fit") # String of File Name
