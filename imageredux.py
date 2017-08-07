@@ -4,14 +4,16 @@
 # Copyright (c) 2017-2018, Martin Beroiz, Richard Camuccio, Juan Garcia,
 # Pamela Lara, Moises Castillo
 # All rights reserved.
+
 import ccdproc
 from astropy import units as u
 from os.path import exists
 
-def doDarkComb (darklist):
-	"This will combine darks to mke a darkmaster"
-	darkmaster = ccdproc.combine(darklist, output_file="darkmaster.fits", method="median", unit=u.adu, clobber=True)
-	return darkmaster
+def do_dark_combine(dark_list):
+	
+    master_dark = ccdproc.combine(darklist, output_file="master-dark.fit", method="median", unit="u.adu", clobber=True)
+	
+    return master_dark
 
 # This Function takes a single image and reduces using dark and flat master.
 def redux(image, masterDark, masterFlat):
