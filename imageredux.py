@@ -9,11 +9,21 @@ import ccdproc
 from astropy import units as u
 from os.path import exists
 
+# Create master dark
 def do_dark_combine(dark_list):
-	
-    master_dark = ccdproc.combine(darklist, output_file="master-dark.fit", method="median", unit="u.adu", clobber=True)
+
+    print("Combining darks...")
+    master_dark = ccdproc.combine(dark_list, output_file="master-dark.fit", method="median", unit="u.adu", clobber=True)
 	
     return master_dark
+
+# Create master flat
+def do_flat_combine(flat_list):
+
+    print("Combining flats...")
+    master_flat = ccdproc.combine(flat_list, output_file="master-flat.fit", method="median", unit="u.adu", clobber=True)
+
+    return master_flat
 
 # This Function takes a single image and reduces using dark and flat master.
 def redux(image, masterDark, masterFlat):
