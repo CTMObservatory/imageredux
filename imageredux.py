@@ -5,51 +5,80 @@
 # Pamela Lara, Moises Castillo
 # All rights reserved.
 
-import ccdproc
 from astropy import units as u
-from os.path import exists
+import ccdproc
+import glob
+import os
+
+# Initialize lists
+dark_list = []
+flat_list = []
+object_list = []
+
+# Append calibration and object frames to list
+for frame in glob.glob("*.fit"):
+
+    if "dark" in frame:
+        dark_list.append(frame)
+    elif "flat" in frame:
+        flat_list.append(frame)
+    else:
+        object_list.append(frame)
 
 # Create master dark
 def do_dark_combine(dark_list):
 
     print("Combining darks...")
-    master_dark = ccdproc.combine(dark_list, output_file="master-dark.fit", method="median", unit="u.adu", clobber=True)
-	
+    master_dark = ccdproc.combine(dark_list, method="median", unit="u.adu", clobber=True)
+    #ccdproc.fits_ccddata_writer(master_dark, "master-dark.fit")
+
     return master_dark
 
 # Create master flat
-def do_flat_combine(flat_list):
+def do_flat_combine(flat_list, master_dark):
 
     print("Combining flats...")
-    master_flat = ccdproc.combine(flat_list, output_file="master-flat.fit", method="median", unit="u.adu", clobber=True)
-
+    combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu", clobber=True)
+    #ccdproc.fits_ccddata_writer(flat_list, "average-flat.fit")
+    
+    print("Subtracting dark from flat...")
+    master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
+    #ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
+    
     return master_flat
 
- # Subtract dark from flat
-def do_dark_subtract(master_dark, master_flat):
+# Image calibration
+def do_calibrate(object_list, master_flat, master_dark):
 
-    print("Subtracting dark from flat...")
-    flat_min_dark = ccdproc.subtract_dark(master_flat, master_dark, data_exposure=master_flat.header['exposure']*u.second, dark_exposure=master_dark.header['exposure']*u.second, scale=True)
-    ccdproc.fits_ccddata_writer(flat_min_dark, "flat-min-dark.fit")
+    if not os.path.exists("cal_frames"):
+        os.makedirs("cal_frames")
 
-    return flat_min_dark
+    cal_index = 1
 
-# This Function takes a single image and reduces using dark and flat master.
-def redux(image, masterDark, masterFlat):
-    reduxFileName = image.replace(".fit","_redux.fit") # String of File Name
+    for item in object_list:
 
-    # Check if file exists
-    if exists(reduxFileName):
-        print("Skipping reduction;", reduxFileName, 'already exists')
-    else:
-        reduxFile = ccdproc.CCDData.read(image,unit="adu") # Read file
-        masterDark = ccdproc.CCDData.read(masterDark, unit="adu")
-        masterFlat = ccdproc.CCDData.read(masterFlat, unit="adu")
-        reduxFile = ccdproc.subtract_dark(reduxFile, masterDark, exposure_time='exptime', exposure_unit = u.second) # Subtract Dark
-        reduxFile = ccdproc.flat_correct(reduxFile, masterFlat) # Divide by Flat
-        # Write fits file
-        reduxFile.write(reduxFileName)
-    return reduxFileName
+        # Convert frame into CCD data object
+        object_frame = ccdproc.fits_ccddata_reader(item, unit="u.adu")
+
+        # Subtract dark from object
+        print("Subtracting dark from object " + str(cal_index) + "...")
+        object_min_dark = ccdproc.subtract_dark(object_frame, master_dark, data_exposure=object_frame.header['exposure']*u.second, dark_exposure=master_dark.header['exposure']*u.second, scale=True)
+        #ccdproc.fits_ccddata_writer(object_min_dark, "obj-min-dark.fit")
+
+        # Divide object by flat
+        print("Dividing object " + str(cal_index) + " by flat...")
+        cal_object_frame = ccdproc.flat_correct(object_min_dark, master_flat)
+        ccdproc.fits_ccddata_writer(cal_object_frame, "cal_frames/cal-"+str(cal_index)+"-"+str(item))
+
+        cal_index += 1
+
+def main():
+
+    master_dark = do_dark_combine(dark_list)
+    master_flat = do_flat_combine(flat_list, master_dark)
+    do_calibrate(object_list, master_flat, master_dark)
+
+main()
 
 if __name__ == '__main__':
-    redux('hatp27.fit','master_dark.fit','master_flat.fit')
+    print("This program is autonomous. Beware.")
