@@ -100,7 +100,7 @@ if __name__ == '__main__':
         dest='output_path',
         )
     args = parser.parse_args()
-    _OUT_DIR = args.out_path
-    _IN_DIR = args.in_path
+    _OUT_DIR = args.output_path
+    _IN_DIR = args.input_path
 
     main()
