@@ -10,6 +10,10 @@ import ccdproc
 import glob
 import os
 
+# This global var's will contain IN and OUT paths.
+_OUT_DIR = ""
+_IN_DIR = ""
+
 # Initialize lists
 dark_list = []
 flat_list = []
@@ -40,11 +44,11 @@ def do_flat_combine(flat_list, master_dark):
     print("Combining flats...")
     combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu", clobber=True)
     #ccdproc.fits_ccddata_writer(flat_list, "average-flat.fit")
-    
+
     print("Subtracting dark from flat...")
     master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
     #ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
-    
+
     return master_flat
 
 # Image calibration
@@ -78,7 +82,25 @@ def main():
     master_flat = do_flat_combine(flat_list, master_dark)
     do_calibrate(object_list, master_flat, master_dark)
 
-main()
 
 if __name__ == '__main__':
     print("This program is autonomous. Beware.")
+    import argparse
+    parser = argparse.ArgumentParser(description='Arguments for imageredux')
+    parser.add_argument(
+        '-i', default='./',
+        help='Path to root directory where FITS files are. Default is current dir.',
+        metavar='DIR',
+        dest='input_path',
+        )
+    parser.add_argument(
+        '-o', default='./',
+        help='Path where intermediate and final files will be saved. Default is current dir.',
+        metavar='DIR',
+        dest='output_path',
+        )
+    args = parser.parse_args()
+    _OUT_DIR = args.out_path
+    _IN_DIR = args.in_path
+
+    main()
