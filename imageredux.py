@@ -36,7 +36,7 @@ def do_dark_combine(dark_list):
     master_dark = ccdproc.combine(dark_list, method="median", unit="u.adu", clobber=True)
     #ccdproc.fits_ccddata_writer(master_dark, "master-dark.fit")
 
-    return master_dark
+    return 'master_dark.fits'
 
 # Create master flat
 def do_flat_combine(flat_list, master_dark):
