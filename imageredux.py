@@ -6,6 +6,8 @@
 # All rights reserved.
 
 from astropy import units as u
+from astropy.io import fits
+import numpy as np
 import ccdproc
 import glob
 import os
@@ -33,8 +35,23 @@ def do_flat_combine(flat_list, master_dark):
     print("Subtracting dark from flat...")
     master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
     ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
+    
+    master_flat = do_flat_normal("master-flat.fit")
 
     return master_flat
+
+# Normalizing Flat
+def do_flat_normal(master_flat): # Normalization through median
+    print("Normalizing the masterflat...")
+    hdu_list = fits.open(master_flat) # bringing the master flat into an array to use numpy
+    hdu_list.info()
+    
+    masterflat_data = hdu_list[0].data # The data is now stored as a 2-D numpy array.
+    masterflat_median = np.median(masterflat_data) # Calculating the median of the master flat
+    normalized_masterflat = masterflat_data/masterflat_median # normalazinf the master flat by dividing it by its median
+    normalized_masterflat = ccdproc.CCDData(normalized_masterflat, unit=u.adu) #Convert np array to CCDData
+    #normalized_masterflat = ccdproc.ccddata_writer(normalized_masterflat, "master-flat.fit") 
+    return normalized_masterflat
 
 # Image calibration
 def do_calibrate(object_list, master_flat, master_dark):
@@ -67,6 +84,7 @@ def main():
     dark_list = []
     flat_list = []
     object_list = []
+    bias_list = []
 
     # Append calibration and object frames to list
     for frame in glob.glob("*.fit"):
@@ -75,6 +93,8 @@ def main():
             dark_list.append(frame)
         elif "flat" in frame:
             flat_list.append(frame)
+        elif "bias" in frame:
+        	bias_list.append(frame)
         else:
             object_list.append(frame)
 
