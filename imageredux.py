@@ -81,6 +81,7 @@ def do_calibrate(object_list, master_flat, master_dark):
 def main():
 
     # Initialize lists
+    bias_list = []
     dark_list = []
     flat_list = []
     object_list = []
@@ -89,7 +90,9 @@ def main():
     # Append calibration and object frames to list
     for frame in glob.glob("*.fit"):
 
-        if "dark" in frame:
+        if "bias" in frame:
+            bias_list.append(frame)
+        elif "dark" in frame:
             dark_list.append(frame)
         elif "flat" in frame:
             flat_list.append(frame)
@@ -98,10 +101,10 @@ def main():
         else:
             object_list.append(frame)
 
+    # Run commands here
     master_dark = do_dark_combine(dark_list)
     master_flat = do_flat_combine(flat_list, master_dark)
     do_calibrate(object_list, master_flat, master_dark)
-
 
 if __name__ == '__main__':
     print("This program is autonomous. Beware.")
