@@ -28,7 +28,7 @@ def do_flat_combine(flat_list, master_dark):
 
     print("Combining flats...")
     combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu", clobber=True)
-    ccdproc.fits_ccddata_writer(combined_flat, "average-flat.fit")
+    #ccdproc.fits_ccddata_writer(combined_flat, "average-flat.fit")
 
     print("Subtracting dark from flat...")
     master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
@@ -52,7 +52,7 @@ def do_calibrate(object_list, master_flat, master_dark):
         # Subtract dark from object
         print("Subtracting dark from object " + str(cal_index) + "...")
         object_min_dark = ccdproc.subtract_dark(object_frame, master_dark, data_exposure=object_frame.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
-        ccdproc.fits_ccddata_writer(object_min_dark, "obj-min-dark-"+str(cal_index)+".fit")
+        #ccdproc.fits_ccddata_writer(object_min_dark, "obj-min-dark-"+str(cal_index)+".fit")
 
         # Divide object by flat
         print("Dividing object " + str(cal_index) + " by flat...")
@@ -82,12 +82,15 @@ def main():
             object_list.append(frame)
 
     # Run commands here
-    master_dark = do_dark_combine(dark_list)
-    master_flat = do_flat_combine(flat_list, master_dark)
-    do_calibrate(object_list, master_flat, master_dark)
+    #master_dark = do_dark_combine(dark_list)
+    #master_flat = do_flat_combine(flat_list, master_dark)
+    #do_calibrate(object_list, master_flat, master_dark)
 
 if __name__ == '__main__':
-    print("This program is autonomous. Beware.")
+    print("======================================")
+    print("// Welcome to TOROS ImageRedux module")
+    print("// CGWA Time Domain Group (2017)")
+    print("======================================")
     import argparse
     parser = argparse.ArgumentParser(description='Arguments for imageredux')
     parser.add_argument(
