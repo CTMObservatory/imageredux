@@ -35,22 +35,29 @@ def do_flat_combine(flat_list, master_dark):
     print("Subtracting dark from flat...")
     master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
     ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
-    
-    master_flat = do_flat_normal("master-flat.fit")
 
     return master_flat
 
-# Normalizing Flat
-def do_flat_normal(master_flat): # Normalization through median
+# Normalize master flat by median
+def do_flat_normal(master_flat):
+
     print("Normalizing the masterflat...")
-    hdu_list = fits.open(master_flat) # bringing the master flat into an array to use numpy
-    hdu_list.info()
+
+    # Convert CCDData object to numpy array
+    master_flat = np.asarray(master_flat)
     
-    masterflat_data = hdu_list[0].data # The data is now stored as a 2-D numpy array.
-    masterflat_median = np.median(masterflat_data) # Calculating the median of the master flat
-    normalized_masterflat = masterflat_data/masterflat_median # normalazinf the master flat by dividing it by its median
-    normalized_masterflat = ccdproc.CCDData(normalized_masterflat, unit=u.adu) #Convert np array to CCDData
-    #normalized_masterflat = ccdproc.ccddata_writer(normalized_masterflat, "master-flat.fit") 
+    # Calculate median of master flat
+    masterflat_median = np.median(master_flat)
+    print(masterflat_median)
+
+    # Normalize master flat by median division
+    normalized_masterflat = master_flat / masterflat_median
+
+    # Convert numpy array to CCDData object
+    normalized_masterflat = ccdproc.CCDData(normalized_masterflat, unit="u.adu")
+
+    #ccdproc.fits_ccddata_writer(normalized_masterflat, "master-flat.fit")
+
     return normalized_masterflat
 
 # Image calibration
@@ -59,24 +66,28 @@ def do_calibrate(object_list, master_flat, master_dark):
     if not os.path.exists("cal_frames"):
         os.makedirs("cal_frames")
 
-    cal_index = 1
+        cal_index = 1
 
-    for item in object_list:
+        for item in object_list:
 
-        # Convert frame into CCD data object
-        object_frame = ccdproc.fits_ccddata_reader(item, unit="u.adu")
+            # Convert frame into CCD data object
+            object_frame = ccdproc.fits_ccddata_reader(item, unit="u.adu")
 
-        # Subtract dark from object
-        print("Subtracting dark from object " + str(cal_index) + "...")
-        object_min_dark = ccdproc.subtract_dark(object_frame, master_dark, data_exposure=object_frame.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
-        #ccdproc.fits_ccddata_writer(object_min_dark, "obj-min-dark-"+str(cal_index)+".fit")
+            # Subtract dark from object
+            print("Subtracting dark from object " + str(cal_index) + "...")
+            object_min_dark = ccdproc.subtract_dark(object_frame, master_dark, data_exposure=object_frame.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
+            #ccdproc.fits_ccddata_writer(object_min_dark, "obj-min-dark-"+str(cal_index)+".fit")
 
-        # Divide object by flat
-        print("Dividing object " + str(cal_index) + " by flat...")
-        cal_object_frame = ccdproc.flat_correct(object_min_dark, master_flat)
-        ccdproc.fits_ccddata_writer(cal_object_frame, "cal_frames/cal-"+str(cal_index)+"-"+str(item))
+            # Divide object by flat
+            print("Dividing object " + str(cal_index) + " by flat...")
+            cal_object_frame = ccdproc.flat_correct(object_min_dark, master_flat)
+            ccdproc.fits_ccddata_writer(cal_object_frame, "cal_frames/cal-"+str(cal_index)+"-"+str(item))
 
-        cal_index += 1
+            cal_index += 1
+
+    else:
+        print("No need to be redundant, silly!")
+
 
 def main():
 
@@ -85,7 +96,6 @@ def main():
     dark_list = []
     flat_list = []
     object_list = []
-    bias_list = []
 
     # Append calibration and object frames to list
     for frame in glob.glob("*.fit"):
@@ -96,17 +106,17 @@ def main():
             dark_list.append(frame)
         elif "flat" in frame:
             flat_list.append(frame)
-        elif "bias" in frame:
-        	bias_list.append(frame)
         else:
             object_list.append(frame)
 
     # Run commands here
-    #master_dark = do_dark_combine(dark_list)
-    #master_flat = do_flat_combine(flat_list, master_dark)
-    #do_calibrate(object_list, master_flat, master_dark)
+    master_dark = do_dark_combine(dark_list)
+    master_flat = do_flat_combine(flat_list, master_dark)
+    #normalized_masterflat = do_flat_normal(master_flat)
+    do_calibrate(object_list, master_flat, master_dark)
 
 if __name__ == '__main__':
+    os.system('clear')
     print("======================================")
     print("// Welcome to TOROS ImageRedux module")
     print("// CGWA Time Domain Group (2017)")
