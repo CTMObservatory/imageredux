@@ -45,7 +45,7 @@ def do_flat_normal(master_flat):
 
     # Convert CCDData object to numpy array
     master_flat = np.asarray(master_flat)
-    
+
     # Calculate median of master flat
     masterflat_median = np.median(master_flat)
     print(masterflat_median)
@@ -91,29 +91,22 @@ def do_calibrate(object_list, master_flat, master_dark):
 
 def main():
 
-    # Initialize lists
-    bias_list = []
-    dark_list = []
-    flat_list = []
-    object_list = []
+    # Create lists
+    bias_list = glob.glob(os.path.join(_IN_DIR, "bias", "*bias*.fit*"))
+    dark_list = glob.glob(os.path.join(_IN_DIR, "dark", "*dark*.fit*"))
+    flat_list = glob.glob(os.path.join(_IN_DIR, "flat", "*flat*.fit*"))
 
-    # Append calibration and object frames to list
-    for frame in glob.glob("*.fit"):
-
-        if "bias" in frame:
-            bias_list.append(frame)
-        elif "dark" in frame:
-            dark_list.append(frame)
-        elif "flat" in frame:
-            flat_list.append(frame)
-        else:
-            object_list.append(frame)
-
-    # Run commands here
     master_dark = do_dark_combine(dark_list)
     master_flat = do_flat_combine(flat_list, master_dark)
-    #normalized_masterflat = do_flat_normal(master_flat)
-    do_calibrate(object_list, master_flat, master_dark)
+
+    obj_dirs = [f for f in os.listdir(_IN_DIR)
+        if os.path.isdir(os.path.join(_IN_DIR, f))
+           and f not in ['bias', 'dark', 'flat']]
+    for obj in obj_dirs:
+        object_list = glob.glob(os.path.join(_IN_DIR, obj, "*.fit*"))
+        #normalized_masterflat = do_flat_normal(master_flat)
+        do_calibrate(object_list, master_flat, master_dark)
+
 
 if __name__ == '__main__':
     os.system('clear')
