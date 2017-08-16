@@ -43,15 +43,8 @@ def do_flat_normal(master_flat):
 
     print("Normalizing the masterflat...")
 
-    # Convert CCDData object to numpy array
-    master_flat = np.asarray(master_flat)
-
-    # Calculate median of master flat
-    masterflat_median = np.median(master_flat)
-    print(masterflat_median)
-
     # Normalize master flat by median division
-    normalized_masterflat = master_flat / masterflat_median
+    normalized_masterflat = master_flat / np.median(master_flat)
 
     # Convert numpy array to CCDData object
     normalized_masterflat = ccdproc.CCDData(normalized_masterflat, unit="u.adu")
