@@ -11,6 +11,7 @@ import numpy as np
 import ccdproc
 import glob
 import os
+from pathlib import Path
 
 # This global var's will contain IN and OUT paths.
 _OUT_DIR = ""
@@ -81,6 +82,14 @@ def do_calibrate(object_list, master_flat, master_dark):
     else:
         print("No need to be redundant, silly!")
 
+# Makes array of file paths in this directory and all subdirectories, recursively
+# and filters by suffix
+def do_file_list():
+    file_array = np.asarray(sorted(Path('.').glob('**/*.*')))
+    file_array_len = len(file_array)
+    # Filters array for specified file suffix
+    suffix_search = '.fit' # Examples: '.txt' '.py'
+    filtered_list = [path_array[x].with_suffix(suffix_search) for x in range(file_array_len)]
 
 def main():
 
