@@ -27,7 +27,6 @@ _OUT_DIR = None
 
 
 def do_dark_combine(dark_list):
-
     """Create master dark by median-combining a list of dark images.
 
     Args:
@@ -36,7 +35,6 @@ def do_dark_combine(dark_list):
     Returns:
         a CCDData object containing the master dark.
     """
-
     if not os.path.isfile("master-dark.fit"):
 
         print("Combining darks...")
@@ -58,7 +56,6 @@ def do_dark_combine(dark_list):
 
 
 def do_flat_combine(flat_list, master_dark):
-
     """Create master flat
 
     Args:
@@ -68,7 +65,6 @@ def do_flat_combine(flat_list, master_dark):
     Returns:
         a CCDData object containing the master flat.
     """
-
     if not os.path.isfile("master-flat.fit"):
 
         print("Combining flats...")
@@ -94,7 +90,7 @@ def do_flat_combine(flat_list, master_dark):
     return master_flat
 
 
-def do_calibrate(object_list, master_flat, master_dark):
+def do_calibrate(object_list, master_flat, master_dark, obj):
     """Calibrate a list of images.
 
     Args:
@@ -105,13 +101,17 @@ def do_calibrate(object_list, master_flat, master_dark):
     Returns:
         None
     """
-    if not os.path.exists("cal_frames"):
+    if not os.path.exists("cal_"+str(obj)):
 
-        os.makedirs("cal_frames")
+        cal_dir = "cal_"+str(obj)
 
+        os.makedirs(cal_dir)
+    
         cal_index = 1
 
         for item in object_list:
+
+            my_frame = os.path.split(item)[1]
 
             # Convert frame into CCDData object
             object_frame = ccdproc.fits_ccddata_reader(item, unit="u.adu")
@@ -121,22 +121,15 @@ def do_calibrate(object_list, master_flat, master_dark):
             # Subtract dark from object
             object_min_dark = ccdproc.subtract_dark(object_frame, master_dark, data_exposure=object_frame.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
 
-            # Write dark-subtracted object to disk
-            # ccdproc.fits_ccddata_writer(object_min_dark, "obj-min-dark-"+str(cal_index)+".fit")
-
             print("Dividing object " + str(cal_index) + " by flat...")
 
             # Divide object by flat
             cal_object_frame = ccdproc.flat_correct(object_min_dark, master_flat)
 
             # Write calibrated object to disk
-            ccdproc.fits_ccddata_writer(cal_object_frame, "cal_frames/cal-"+str(cal_index)+"-"+str(item))
+            ccdproc.fits_ccddata_writer(cal_object_frame, cal_dir+"/cal-"+str(cal_index)+"-"+str(my_frame))
 
             cal_index += 1
-
-    else:
-
-        print("<Error> Skipping redux: directory 'cal_frame' exists")
 
 
 def do_file_list():
@@ -177,7 +170,7 @@ def main():
 
         # Calibrate object frames
         object_list = glob.glob(os.path.join(_IN_DIR, obj, "*.fit*"))
-        do_calibrate(object_list, master_flat, master_dark)
+        do_calibrate(object_list, master_flat, master_dark, obj)
 
 
 if __name__ == '__main__':
