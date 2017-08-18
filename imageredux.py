@@ -75,29 +75,6 @@ def do_flat_combine(flat_list, master_dark):
     return master_flat
 
 
-def do_flat_normal(master_flat):
-    """Normalize master flat by the median.
-
-    Args:
-        master_flat: a CCDData object containing the unnormalized master flat.
-
-    Returns:
-        a CCDData object containing the normalized master flat.
-    """
-    print("Normalizing the masterflat...")
-
-    # Normalize master flat by median division
-    normalized_masterflat = master_flat / np.median(master_flat)
-
-    # Convert numpy array to CCDData object
-    normalized_masterflat = ccdproc.CCDData(normalized_masterflat, unit="u.adu")
-
-    # Write (normalized) master flat to disk
-    ccdproc.fits_ccddata_writer(normalized_masterflat, "master-flat.fit")
-
-    return normalized_masterflat
-
-
 def do_calibrate(object_list, master_flat, master_dark):
     """Calibrate a list of images.
 
@@ -181,7 +158,6 @@ def main():
 
         # Calibrate object frames
         object_list = glob.glob(os.path.join(_IN_DIR, obj, "*.fit*"))
-        #normalized_masterflat = do_flat_normal(master_flat)
         do_calibrate(object_list, master_flat, master_dark)
 
 
