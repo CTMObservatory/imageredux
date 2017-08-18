@@ -153,11 +153,6 @@ def do_file_list():
 
 
 def main():
-    os.system('clear')
-    print()
-    print("// ImageRedux")
-    print("// CGWA TDAG - Aug 2017")
-    print()
 
     os.system('clear')
     print()
