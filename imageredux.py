@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+imageredux
+==========
 
-# Copyright (c) 2017-2018, Martin Beroiz, Richard Camuccio, Juan Garcia,
-# Pamela Lara, Moises Castillo
-# All rights reserved.
+Script to reduce images for LIGO counterpart searches.
+
+Copyright (c) 2017-2018, Martin Beroiz, Richard Camuccio, Juan Garcia,
+Pamela Lara, Moises Castillo
+
+All rights reserved.
+"""
 
 from astropy import units as u
 import numpy as np
@@ -12,63 +19,97 @@ import glob
 import os
 from pathlib import Path
 
-# This global var's will contain IN and OUT paths.
-_OUT_DIR = ""
-_IN_DIR = ""
+_IN_DIR = None
+"The path to the images directory."
+_OUT_DIR = None
+"The path to the directory where new files will be saved."
 
-# Create master dark
+
 def do_dark_combine(dark_list):
 
-    print("Combining darks...")
+    """Create master dark by median-combining a list of dark images.
 
-    # Median combine darks
-    master_dark = ccdproc.combine(dark_list, method="median", unit="u.adu", clobber=True)
+    Args:
+        dark_list: a list of CCDData objects containing the individual dark frames.
 
-    # Write master dark to disk
-    ccdproc.fits_ccddata_writer(master_dark, "master-dark.fit")
+    Returns:
+        a CCDData object containing the master dark.
+    """
+
+    if not os.path.isfile("master-dark.fit"):
+
+        print("Combining darks...")
+
+        # Median combine darks
+        master_dark = ccdproc.combine(dark_list, method="median", unit="u.adu", clobber=True)
+
+        # Write master dark to disk
+        ccdproc.fits_ccddata_writer(master_dark, "master-dark.fit")
+
+    else:
+
+        print("<Error> Skipping dark combine: file 'master-dark.fit' already exists")
+
+        # Read master dark from disk and assign to variable
+        master_dark = ccdproc.fits_ccddata_reader("master-dark.fit")
 
     return master_dark
 
-# Create (non-normalized) master flat
+
 def do_flat_combine(flat_list, master_dark):
 
-    print("Combining flats...")
+    """Create master flat
 
-    # Median combine flats
-    combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu", clobber=True)
+    Args:
+        flat_list: a list of CCDData objects containing the individual flat frames.
+        master_dark: a CCDData object containing the master dark.
 
-    # Write combined flat to disk
-    #ccdproc.fits_ccddata_writer(combined_flat, "average-flat.fit")
+    Returns:
+        a CCDData object containing the master flat.
+    """
 
-    print("Subtracting dark from flat...")
+    if not os.path.isfile("master-flat.fit"):
 
-    # Subtract master dark from combined flat
-    master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
+        # Subtract master dark from combined flat
+        master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
 
-    # Write (non-normalized) master flat to disk
-    ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
+        # Write (non-normalized) master flat to disk
+        ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
+
+        print("Combining flats...")
+
+        # Median combine flats
+        combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu", clobber=True)
+
+        print("Subtracting dark from flat...")
+
+        # Subtract master dark from combined flat
+        master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
+
+        # Write master flat to disk
+        ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
+
+    else:
+
+        print("<Error> Skipping flat combine: file 'master-flat.fit' already exists")
+
+        # Read master flat from disk and assign to variable
+        master_flat = ccdproc.fits_ccddata_reader("master-flat.fit")
 
     return master_flat
 
-# Normalize master flat by median
-def do_flat_normal(master_flat):
 
-    print("Normalizing the masterflat...")
-
-    # Normalize master flat by median division
-    normalized_masterflat = master_flat / np.median(master_flat)
-
-    # Convert numpy array to CCDData object
-    normalized_masterflat = ccdproc.CCDData(normalized_masterflat, unit="u.adu")
-
-    # Write (normalized) master flat to disk
-    ccdproc.fits_ccddata_writer(normalized_masterflat, "master-flat.fit")
-
-    return normalized_masterflat
-
-# Image calibration
 def do_calibrate(object_list, master_flat, master_dark):
+    """Calibrate a list of images.
 
+    Args:
+        object_list: a list of CCDData objects containing the light frames to be calibrated.
+        master_flat: a CCDData object containing the master flat.
+        master_dark: a CCDData object containing the master dark.
+
+    Returns:
+        None
+    """
     if not os.path.exists("cal_frames"):
 
         os.makedirs("cal_frames")
@@ -86,7 +127,7 @@ def do_calibrate(object_list, master_flat, master_dark):
             object_min_dark = ccdproc.subtract_dark(object_frame, master_dark, data_exposure=object_frame.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
 
             # Write dark-subtracted object to disk
-            #ccdproc.fits_ccddata_writer(object_min_dark, "obj-min-dark-"+str(cal_index)+".fit")
+            # ccdproc.fits_ccddata_writer(object_min_dark, "obj-min-dark-"+str(cal_index)+".fit")
 
             print("Dividing object " + str(cal_index) + " by flat...")
 
@@ -103,19 +144,27 @@ def do_calibrate(object_list, master_flat, master_dark):
         print("<Error> Skipping redux: directory 'cal_frame' exists")
 
 
-# Makes array of file paths in this directory and all subdirectories, recursively
-# and filters by suffix
 def do_file_list():
 
+    """Make array of file paths in this directory and all subdirectories, recursively
+    and filter by suffix.
+    """
     file_array = np.asarray(sorted(Path(_IN_DIR).glob('**/*.*')))
 
     file_array_len = len(file_array)
 
     # Filters array for specified file suffix
     suffix_search = '.fit' # Examples: '.txt' '.py'
+
     filtered_list = [file_array[x].with_suffix(suffix_search) for x in range(file_array_len)]
 
+
 def main():
+    os.system('clear')
+    print()
+    print("// ImageRedux")
+    print("// CGWA TDAG - Aug 2017")
+    print()
 
     os.system('clear')
     print()
@@ -133,21 +182,21 @@ def main():
     master_flat = do_flat_combine(flat_list, master_dark)
 
     obj_dirs = [f for f in os.listdir(_IN_DIR)
-
-        if os.path.isdir(os.path.join(_IN_DIR, f))
-
-           and f not in ['bias', 'dark', 'flat']]
+                if os.path.isdir(os.path.join(_IN_DIR, f)) and
+                f not in ['bias', 'dark', 'flat']]
 
     for obj in obj_dirs:
 
         # Calibrate object frames
         object_list = glob.glob(os.path.join(_IN_DIR, obj, "*.fit*"))
-        #normalized_masterflat = do_flat_normal(master_flat)
         do_calibrate(object_list, master_flat, master_dark)
 
 
 if __name__ == '__main__':
+<<<<<<< HEAD
 
+=======
+>>>>>>> d454f6da74c625c547ff19ddd9991d3e4e07b014
     import argparse
 
     parser = argparse.ArgumentParser(description='Arguments for imageredux')
