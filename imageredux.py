@@ -193,10 +193,7 @@ def main():
 
 
 if __name__ == '__main__':
-<<<<<<< HEAD
 
-=======
->>>>>>> d454f6da74c625c547ff19ddd9991d3e4e07b014
     import argparse
 
     parser = argparse.ArgumentParser(description='Arguments for imageredux')
