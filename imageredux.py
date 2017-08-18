@@ -6,7 +6,6 @@
 # All rights reserved.
 
 from astropy import units as u
-from astropy.io import fits
 import numpy as np
 import ccdproc
 import glob
@@ -45,7 +44,7 @@ def do_flat_combine(flat_list, master_dark):
 
     # Subtract master dark from combined flat
     master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
-    
+
     # Write (non-normalized) master flat to disk
     ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
 
@@ -85,7 +84,7 @@ def do_calibrate(object_list, master_flat, master_dark):
 
             # Subtract dark from object
             object_min_dark = ccdproc.subtract_dark(object_frame, master_dark, data_exposure=object_frame.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
-            
+
             # Write dark-subtracted object to disk
             #ccdproc.fits_ccddata_writer(object_min_dark, "obj-min-dark-"+str(cal_index)+".fit")
 
@@ -108,17 +107,21 @@ def do_calibrate(object_list, master_flat, master_dark):
 # and filters by suffix
 def do_file_list():
 
-    file_array = np.asarray(sorted(Path('.').glob('**/*.*')))
+    file_array = np.asarray(sorted(Path(_IN_DIR).glob('**/*.*')))
 
     file_array_len = len(file_array)
 
     # Filters array for specified file suffix
     suffix_search = '.fit' # Examples: '.txt' '.py'
-
-    filtered_list = [path_array[x].with_suffix(suffix_search) for x in range(file_array_len)]
-
+    filtered_list = [file_array[x].with_suffix(suffix_search) for x in range(file_array_len)]
 
 def main():
+
+    os.system('clear')
+    print()
+    print("// ImageRedux")
+    print("// CGWA TDAG - Aug 2017")
+    print()
 
     # Create lists
     bias_list = glob.glob(os.path.join(_IN_DIR, "bias", "*bias*.fit*"))
@@ -145,12 +148,6 @@ def main():
 
 if __name__ == '__main__':
 
-    os.system('clear')
-    print()
-    print("// ImageRedux")
-    print("// CGWA TDAG - Aug 2017")
-    print()
-
     import argparse
 
     parser = argparse.ArgumentParser(description='Arguments for imageredux')
@@ -170,7 +167,7 @@ if __name__ == '__main__':
         )
 
     args = parser.parse_args()
-    
+
     _OUT_DIR = args.output_path
     _IN_DIR = args.input_path
 
