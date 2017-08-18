@@ -13,7 +13,6 @@ All rights reserved.
 """
 
 from astropy import units as u
-from astropy.io import fits
 import numpy as np
 import ccdproc
 import glob
@@ -66,6 +65,12 @@ def do_flat_combine(flat_list, master_dark):
         a CCDData object containing the master flat.
     """
     if not os.path.isfile("master-flat.fit"):
+
+        # Subtract master dark from combined flat
+        master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
+
+        # Write (non-normalized) master flat to disk
+        ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
 
         print("Combining flats...")
 
@@ -133,20 +138,27 @@ def do_calibrate(object_list, master_flat, master_dark, obj):
 
 
 def do_file_list():
+
     """Make array of file paths in this directory and all subdirectories, recursively
     and filter by suffix.
     """
-    file_array = np.asarray(sorted(Path('.').glob('**/*.*')))
+    file_array = np.asarray(sorted(Path(_IN_DIR).glob('**/*.*')))
 
     file_array_len = len(file_array)
 
     # Filters array for specified file suffix
-    suffix_search = '.fit'  # Examples: '.txt' '.py'
+    suffix_search = '.fit' # Examples: '.txt' '.py'
 
-    filtered_list = [path_array[x].with_suffix(suffix_search) for x in range(file_array_len)]
+    filtered_list = [file_array[x].with_suffix(suffix_search) for x in range(file_array_len)]
 
 
 def main():
+    os.system('clear')
+    print()
+    print("// ImageRedux")
+    print("// CGWA TDAG - Aug 2017")
+    print()
+
     os.system('clear')
     print()
     print("// ImageRedux")
@@ -174,6 +186,7 @@ def main():
 
 
 if __name__ == '__main__':
+
     import argparse
 
     parser = argparse.ArgumentParser(description='Arguments for imageredux')
