@@ -27,6 +27,7 @@ _OUT_DIR = None
 
 
 def do_dark_combine(dark_list):
+
     """Create master dark by median-combining a list of dark images.
 
     Args:
@@ -35,19 +36,30 @@ def do_dark_combine(dark_list):
     Returns:
         a CCDData object containing the master dark.
     """
-    print("Combining darks...")
 
-    # Median combine darks
-    master_dark = ccdproc.combine(dark_list, method="median", unit="u.adu", clobber=True)
+    if not os.path.isfile("master-dark.fit"):
 
-    # Write master dark to disk
-    ccdproc.fits_ccddata_writer(master_dark, "master-dark.fit")
+        print("Combining darks...")
+
+        # Median combine darks
+        master_dark = ccdproc.combine(dark_list, method="median", unit="u.adu", clobber=True)
+
+        # Write master dark to disk
+        ccdproc.fits_ccddata_writer(master_dark, "master-dark.fit")
+
+    else:
+
+        print("<Error> Skipping dark combine: file 'master-dark.fit' already exists")
+
+        # Read master dark from disk and assign to variable
+        master_dark = ccdproc.fits_ccddata_reader("master-dark.fit")
 
     return master_dark
 
 
 def do_flat_combine(flat_list, master_dark):
-    """Create (non-normalized) master flat
+
+    """Create master flat
 
     Args:
         flat_list: a list of CCDData objects containing the individual flat frames.
@@ -56,21 +68,28 @@ def do_flat_combine(flat_list, master_dark):
     Returns:
         a CCDData object containing the master flat.
     """
-    print("Combining flats...")
 
-    # Median combine flats
-    combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu", clobber=True)
+    if not os.path.isfile("master-flat.fit"):
 
-    # Write combined flat to disk
-    #ccdproc.fits_ccddata_writer(combined_flat, "average-flat.fit")
+        print("Combining flats...")
 
-    print("Subtracting dark from flat...")
+        # Median combine flats
+        combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu", clobber=True)
 
-    # Subtract master dark from combined flat
-    master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
+        print("Subtracting dark from flat...")
 
-    # Write (non-normalized) master flat to disk
-    ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
+        # Subtract master dark from combined flat
+        master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
+
+        # Write master flat to disk
+        ccdproc.fits_ccddata_writer(master_flat, "master-flat.fit")
+
+    else:
+
+        print("<Error> Skipping flat combine: file 'master-flat.fit' already exists")
+
+        # Read master flat from disk and assign to variable
+        master_flat = ccdproc.fits_ccddata_reader("master-flat.fit")
 
     return master_flat
 
