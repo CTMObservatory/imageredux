@@ -25,104 +25,106 @@ _OUT_DIR = None
 "The path to the directory where new files will be saved."
 
 
-def do_dark_combine(dark_list, cal_frame_dir):
-    """Create master dark by median-combining a list of dark images.
+def do_dark_combine(dark_list, master_frame_dir):
+    """
+    Create master dark by median-combining a list of dark images.
 
     Args:
-        dark_list: a list of CCDData objects containing the individual dark frames.
+        dark_list: a list of CCDData objects containing the individual dark frames
 
     Returns:
-        a CCDData object containing the master dark.
+        a CCDData object containing the master dark
     """
-    if not os.path.isfile(cal_frame_dir+"/master-dark.fit"):
+    if not os.path.isfile(master_frame_dir+"/master-dark.fit"):
 
-        print("Combining darks...")
-
+        print("<OUTPUT> Combining darks")
         # Median combine darks
         master_dark = ccdproc.combine(dark_list, method="median", unit="u.adu", clobber=True)
 
+        print("<OUTPUT> Writing master dark to disk")
         # Write master dark to disk
-        ccdproc.fits_ccddata_writer(master_dark, cal_frame_dir+"/master-dark.fit")
+        ccdproc.fits_ccddata_writer(master_dark, master_frame_dir+"/master-dark.fit")
 
     else:
 
-        print("<Error> Skipping dark combine: file 'master-dark.fit' already exists")
-
+        print("<OUTPUT> Skipping dark combine: assigning existing file 'master-dark.fit'")
         # Read master dark from disk and assign to variable
-        master_dark = ccdproc.fits_ccddata_reader(cal_frame_dir+"/master-dark.fit")
+        master_dark = ccdproc.fits_ccddata_reader(master_frame_dir+"/master-dark.fit")
 
     return master_dark
 
 
-def do_flat_combine(flat_list, master_dark, cal_frame_dir):
-    """Create master flat
+def do_flat_combine(flat_list, master_dark, master_frame_dir):
+    """
+    Create master flat.
 
     Args:
-        flat_list: a list of CCDData objects containing the individual flat frames.
-        master_dark: a CCDData object containing the master dark.
+        flat_list: a list of CCDData objects containing the individual flat frames
+        master_dark: a CCDData object containing the master dark
+        master_frame_dir: a string identifying the output path for writing to disk
 
     Returns:
         a CCDData object containing the master flat.
     """
-    if not os.path.isfile(cal_frame_dir+"/master-flat.fit"):
+    if not os.path.isfile(master_frame_dir+"/master-flat.fit"):
 
-        print("Combining flats...")
-
+        print("<OUTPUT> Combining flats")
         # Median combine flats
         combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu", clobber=True)
 
-        print("Subtracting dark from flat...")
-
+        print("<OUTPUT> Subtracting dark from flat")
         # Subtract master dark from combined flat
         master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
 
+        print("<OUTPUT> Writing master flat to disk")
         # Write master flat to disk
-        ccdproc.fits_ccddata_writer(master_flat, cal_frame_dir+"/master-flat.fit")
+        ccdproc.fits_ccddata_writer(master_flat, master_frame_dir+"/master-flat.fit")
 
     else:
 
-        print("<Error> Skipping flat combine: file 'master-flat.fit' already exists")
-
+        print("<OUTPUT> Skipping flat combine: assigning existing file 'master-flat.fit'")
         # Read master flat from disk and assign to variable
-        master_flat = ccdproc.fits_ccddata_reader(cal_frame_dir+"/master-flat.fit")
+        master_flat = ccdproc.fits_ccddata_reader(master_frame_dir+"/master-flat.fit")
 
     return master_flat
 
 
 def do_calibrate(object_list, master_flat, master_dark, obj, cal_frame_dir):
-    """Calibrate a list of images.
+    """
+    Calibrate a list of images.
 
     Args:
-        object_list: a list of CCDData objects containing the light frames to be calibrated.
-        master_flat: a CCDData object containing the master flat.
-        master_dark: a CCDData object containing the master dark.
+        object_list: a list of CCDData objects containing the light frames to be calibrated
+        master_flat: a CCDData object containing the master flat
+        master_dark: a CCDData object containing the master dark
+        cal_frame_dir: a string identifying the output path for writing to disk
 
     Returns:
         None
     """
-    if not os.path.exists("cal_"+str(obj)):
 
-        cal_dir = "cal_"+str(obj)
+    cal_dir = "cal_"+str(obj)
 
+    if not os.path.exists(cal_dir):
         os.makedirs(cal_frame_dir+"/"+cal_dir)
     
         for item in object_list:
 
             frame = os.path.split(item)[1]
 
-            # Convert frame into CCDData object
+            print("<OUTPUT> Reading object " + str(frame))
+            # Read CCDData object
             object_frame = ccdproc.fits_ccddata_reader(item, unit="u.adu")
 
-            print("Subtracting dark from " + str(frame) + "...")
-
+            print("<OUTPUT> Subtracting dark from " + str(frame))
             # Subtract dark from object
             object_min_dark = ccdproc.subtract_dark(object_frame, master_dark, data_exposure=object_frame.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
 
-            print("Dividing " + str(frame) + " by flat...")
-
+            print("<OUTPUT> Dividing " + str(frame) + " by flat")
             # Divide object by flat
             cal_object_frame = ccdproc.flat_correct(object_min_dark, master_flat)
 
+            print("<OUTPUT> Writing object " + str(frame) + " to disk")
             # Write calibrated object to disk
             ccdproc.fits_ccddata_writer(cal_object_frame, cal_frame_dir+"/"+cal_dir+"/cal-"+str(frame))
 
@@ -156,23 +158,44 @@ def main():
     dark_list = glob.glob(os.path.join(_IN_DIR, "dark", "*dark*.fit*"))
     flat_list = glob.glob(os.path.join(_IN_DIR, "flat", "*flat*.fit*"))
 
-    # Create directory to save calibration frames
-    if not os.path.exists(_OUT_DIR+"cal_frames"):
-         cal_frame_dir = _OUT_DIR+"cal_frames"
-         os.makedirs(cal_frame_dir)
+    print("DEBUG: bias_list = " + str(bias_list))
+    print("DEBUG: dark_list = " + str(dark_list))
+    print("DEBUG: flat_list = " + str(flat_list))
+
+    # Create directory to save masters
+    master_frame_dir = _OUT_DIR+"master_frames"
+    print("DEBUG: master_frame_dir = " + str(master_frame_dir))
+    if not os.path.exists(master_frame_dir):
+        print("DEBUG: not os.path.exists(master_frame_dir) = " + str(not os.path.exists(master_frame_dir)))
+        os.makedirs(master_frame_dir)
 
     # Create master calibration frames
-    master_dark = do_dark_combine(dark_list, cal_frame_dir)
-    master_flat = do_flat_combine(flat_list, master_dark, cal_frame_dir)
+    master_dark = do_dark_combine(dark_list, master_frame_dir)
+    master_flat = do_flat_combine(flat_list, master_dark, master_frame_dir)
 
     # Create list of object directories
     obj_dirs = [f for f in os.listdir(_IN_DIR)
                 if os.path.isdir(os.path.join(_IN_DIR, f)) and
                 f not in ['bias', 'dark', 'flat']]
 
+    obj_dirs.remove("master_frames")
+
+    print("DEBUG: obj_dirs = " + str(obj_dirs))
+
+    print(" CHECK : " + str(os.path.exists("master_frame_dir")))
+
+    # Create directory to save calibrated objects
+    cal_frame_dir = _OUT_DIR+"cal_frames"
+    print("DEBUG: cal_frame_dir = " + str(cal_frame_dir))
+    if not os.path.exists(cal_frame_dir):
+         print("DEBUG: not os.path.exists(cal_frame_dir) = " + str(not os.path.exists(cal_frame_dir)))
+         os.makedirs(cal_frame_dir)
+
     # Calibrate object frames
     for obj in obj_dirs:
+        print("DEBUG: obj = " + str(obj))
         object_list = glob.glob(os.path.join(_IN_DIR, obj, "*.fit*"))
+        print("DEBUG: object_list = " + str(object_list))
         do_calibrate(object_list, master_flat, master_dark, obj, cal_frame_dir)
 
 if __name__ == '__main__':
@@ -196,8 +219,11 @@ if __name__ == '__main__':
         )
 
     args = parser.parse_args()
+    print("DEBUG: args = " + str(args))
 
     _OUT_DIR = args.output_path
     _IN_DIR = args.input_path
+    print("DEBUG: _OUT_DIR = " + str(_OUT_DIR))
+    print("DEBUG: _IN_DIR =ls " + str(_IN_DIR))
 
     main()
