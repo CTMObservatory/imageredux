@@ -18,7 +18,7 @@ import ccdproc
 import glob
 import os
 from pathlib import Path
-from astropy.table import Table
+from astropy.table import Table, Column
 
 _IN_DIR = None
 "The path to the images directory."
@@ -132,25 +132,32 @@ def do_calibrate(object_list, master_flat, master_dark, obj, cal_frame_dir):
 
 def do_file_list():
 
-    """Make array of file paths in this directory and all subdirectories, recursively
-    and filter by suffix.
+    """Make array of file paths in this directory and all subdirectories, recursively and filter by suffix.
+    Assumes path:
+        root_path/Observation_date/objectFolder/objectFrames
     """
     file_array = np.asarray(sorted(Path(_IN_DIR).glob('**/*.*')))
 
     file_array_len = len(file_array)
 
     # Filters array for specified file suffix
-    suffix_search = '.fit' # Examples: '.txt' '.py'
+    suffix_search = '*.fit' # Examples: '.txt' '.py'
 
-    # There is an issue with the following line.
-    #   appending .fit to ALL files!!
-    filtered_list = [file_array[x].with_suffix(suffix_search) for x in range(file_array_len)]
+    # Filter list by suffix
+    filtered_list = [file_array[x] for x in range(file_array_len) if file_array[x].match(suffix_search)]
+
+    file_array_len = len(filtered_list)
 
     object_name = [filtered_list[x].parent.name for x in range(file_array_len)]
 
     file_name = [filtered_list[x].name for x in range(file_array_len)]
 
     observation_date = [filtered_list[x].parent.parent.name for x in range(file_array_len)]
+    object_name = Column(object_name)
+
+    file_name = Column(file_name)
+
+    observation_date = Column(observation_date)
 
     file_table = Table([observation_date, object_name, file_name, filtered_list], names=('OBS_Date','Object','Frame','Path'))
 
