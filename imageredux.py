@@ -18,6 +18,7 @@ import ccdproc
 import glob
 import os
 from pathlib import Path
+from astropy.table import Table
 
 _IN_DIR = None
 "The path to the images directory."
@@ -107,7 +108,7 @@ def do_calibrate(object_list, master_flat, master_dark, obj, cal_frame_dir):
 
     if not os.path.exists(cal_dir):
         os.makedirs(cal_frame_dir+"/"+cal_dir)
-    
+
         for item in object_list:
 
             frame = os.path.split(item)[1]
@@ -141,8 +142,21 @@ def do_file_list():
     # Filters array for specified file suffix
     suffix_search = '.fit' # Examples: '.txt' '.py'
 
+    # There is an issue with the following line.
+    #   appending .fit to ALL files!!
     filtered_list = [file_array[x].with_suffix(suffix_search) for x in range(file_array_len)]
 
+    object_name = [filtered_list[x].parent.name for x in range(file_array_len)]
+
+    file_name = [filtered_list[x].name for x in range(file_array_len)]
+
+    observation_date = [filtered_list[x].parent.parent.name for x in range(file_array_len)]
+
+    file_table = Table([observation_date, object_name, file_name, filtered_list], names=('OBS_Date','Object','Frame','Path'))
+
+    obs_by_date = file_table.group_by('OBS_Date')
+
+    return obs_by_date
 
 def main():
 
