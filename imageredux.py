@@ -134,7 +134,9 @@ def do_file_list():
 
     """Make array of file paths in this directory and all subdirectories, recursively and filter by suffix.
     Assumes path:
-        root_path/Observation_date/objectFolder/objectFrames
+        root_path/ObservationDate/objectFolder/objectFrames
+    or
+        root_path/ObservationDate/randomName/objectFolder/objectFrames
     """
     file_array = np.asarray(sorted(Path(_IN_DIR).glob('**/*.*')))
 
@@ -148,19 +150,20 @@ def do_file_list():
 
     file_array_len = len(filtered_list)
 
+    # Parse path to populate table
     object_name = [filtered_list[x].parent.name for x in range(file_array_len)]
-
     file_name = [filtered_list[x].name for x in range(file_array_len)]
+    observation_date = [filtered_list[x].parent.parent.name if filtered_list[x].parent.parent.name.isdigit() else filtered_list[x].parent.parent.parent.name for x in range(file_array_len)]
 
-    observation_date = [filtered_list[x].parent.parent.name for x in range(file_array_len)]
+    # Make list into Columns
     object_name = Column(object_name)
-
     file_name = Column(file_name)
-
     observation_date = Column(observation_date)
 
+    # Populate Table
     file_table = Table([observation_date, object_name, file_name, filtered_list], names=('OBS_Date','Object','Frame','Path'))
 
+    # Create groups by similar observation date
     obs_by_date = file_table.group_by('OBS_Date')
 
     return obs_by_date
