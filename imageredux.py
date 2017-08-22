@@ -38,21 +38,22 @@ def do_dark_combine(dark_list, master_frame_dir):
     Returns:
         a CCDData object containing the master dark
     """
-    if not os.path.isfile(master_frame_dir+"/master-dark.fit"):
+    out_filename = os.path.join(master_frame_dir, "master-dark.fit")
+    if not os.path.isfile(out_filename):
 
-        log.write("<OUTPUT> Combining darks"+"\n")
+        log.write("<OUTPUT> Combining darks\n")
         # Median combine darks
         master_dark = ccdproc.combine(dark_list, method="median", unit="u.adu", clobber=True)
 
-        log.write("<OUTPUT> Writing master dark to disk"+"\n")
+        log.write("<OUTPUT> Writing master dark to disk\n")
         # Write master dark to disk
-        ccdproc.fits_ccddata_writer(master_dark, master_frame_dir+"/master-dark.fit")
+        ccdproc.fits_ccddata_writer(master_dark, out_filename)
 
     else:
 
-        log.write("<OUTPUT> Skipping dark combine: assigning existing file 'master-dark.fit'"+"\n")
+        log.write("<OUTPUT> Skipping dark combine: assigning existing file 'master-dark.fit'\n")
         # Read master dark from disk and assign to variable
-        master_dark = ccdproc.fits_ccddata_reader(master_frame_dir+"/master-dark.fit")
+        master_dark = ccdproc.fits_ccddata_reader(out_filename)
 
     return master_dark
 
