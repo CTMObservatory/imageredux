@@ -12,6 +12,8 @@ Pamela Lara, Moises Castillo
 All rights reserved.
 """
 
+__version__ = "1.0a1"
+
 from astropy import units as u
 import numpy as np
 import ccdproc
