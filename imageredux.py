@@ -90,7 +90,7 @@ def do_flat_combine(flat_list, master_dark, master_frame_dir):
     return master_flat
 
 
-def do_calibrate(object_list, master_flat, master_dark, obj, cal_frame_dir):
+def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_dir):
     """
     Calibrate a list of images.
 
@@ -104,16 +104,16 @@ def do_calibrate(object_list, master_flat, master_dark, obj, cal_frame_dir):
         None
     """
 
-    cal_dir = "cal_"+str(obj)
+    cal_dir = "cal_{}".format(object_name)
 
     if not os.path.exists(cal_dir):
-        os.makedirs(cal_frame_dir+"/"+cal_dir)
+        os.makedirs(os.path.join(cal_frame_dir, cal_dir))
 
         for item in object_list:
 
             frame = os.path.split(item)[1]
 
-            log.write("<OUTPUT> Reading object " + str(frame)+"\n")
+            log.write("<OUTPUT> Reading object {}".format(frame))
             # Read CCDData object
             object_frame = ccdproc.fits_ccddata_reader(item, unit="u.adu")
 
@@ -173,50 +173,56 @@ def main():
     # Fancy header
     print("<STATUS> Starting image redux")
 
-    # Create lists
-    bias_list = glob.glob(os.path.join(_IN_DIR, "bias", "*bias*.fit*"))
-    dark_list = glob.glob(os.path.join(_IN_DIR, "dark", "*dark*.fit*"))
-    flat_list = glob.glob(os.path.join(_IN_DIR, "flat", "*flat*.fit*"))
+    nights_dirs = [os.path.join(_IN_DIR, anight)
+                   for anight in os.listdir(_IN_DIR)
+                   if os.path.isdir(os.path.join(_IN_DIR, anight))]
 
-    log.write("<OUTPUT> bias_list = " + str(bias_list)+"\n")
-    log.write("<OUTPUT> dark_list = " + str(dark_list)+"\n")
-    log.write("<OUTPUT> flat_list = " + str(flat_list)+"\n")
+    for anight in nights_dirs:
+        # I use this to create the output paths
+        anight_base = os.path.basename(os.path.normpath(anight))
+        # Create lists
+        bias_list = glob.glob(os.path.join(anight, "bias", "*bias*.fit*"))
+        dark_list = glob.glob(os.path.join(anight, "dark", "*dark*.fit*"))
+        flat_list = glob.glob(os.path.join(anight, "flat", "*flat*.fit*"))
 
-    # Create directory to save masters
-    master_frame_dir = _OUT_DIR+"/master_frames"
-    log.write("<OUTPUT> master_frame_dir = " + str(master_frame_dir)+"\n")
-    if not os.path.exists(master_frame_dir):
-        log.write("<OUTPUT> not os.path.exists(master_frame_dir) = " + str(not os.path.exists(master_frame_dir))+"\n")
-        os.makedirs(master_frame_dir)
+        log.write("<OUTPUT> bias_list = {}\n".format(bias_list))
+        log.write("<OUTPUT> dark_list = {}\n".format(dark_list))
+        log.write("<OUTPUT> flat_list = {}\n".format(flat_list))
 
-    # Create master calibration frames
-    master_dark = do_dark_combine(dark_list, master_frame_dir)
-    master_flat = do_flat_combine(flat_list, master_dark, master_frame_dir)
+        # Create directory to save masters
+        master_frame_dir = os.path.join(_OUT_DIR, anight_base, "master_frames")
+        log.write("<OUTPUT> master_frame_dir = {}\n".format(master_frame_dir))
+        if not os.path.exists(master_frame_dir):
+            log.write("<OUTPUT> not os.path.exists(master_frame_dir) = " + str(not os.path.exists(master_frame_dir))+"\n")
+            os.makedirs(master_frame_dir)
 
-    # Create list of object directories
-    obj_dirs = [f for f in os.listdir(_IN_DIR)
-                if os.path.isdir(os.path.join(_IN_DIR, f)) and
-                f not in ['bias', 'dark', 'flat']]
+        # Create master calibration frames
+        master_dark = do_dark_combine(dark_list, master_frame_dir)
+        master_flat = do_flat_combine(flat_list, master_dark, master_frame_dir)
 
-    obj_dirs.remove("master_frames")
+        # Create list of object directories
+        obj_dirs = [f for f in os.listdir(anight)
+                    if os.path.isdir(os.path.join(anight, f)) and
+                    f not in ['bias', 'dark', 'flat']]
 
-    log.write("<OUTPUT> obj_dirs = " + str(obj_dirs)+"\n")
-    log.write("<OUTPUT> " + "(Bool) dir 'master_frame_dir' exists > " + str(os.path.exists("master_frame_dir"))+"\n")
+        log.write("<OUTPUT> obj_dirs = {}\n".format(obj_dirs))
+        log.write("<OUTPUT> (Bool) dir 'master_frame_dir' exists > {}\n".format(os.path.exists("master_frame_dir")))
 
-    # Create directory to save calibrated objects
-    cal_frame_dir = _OUT_DIR+"/cal_frames"
-    log.write("<OUTPUT> cal_frame_dir = " + str(cal_frame_dir)+"\n")
-    if not os.path.exists(cal_frame_dir):
-         log.write("<OUTPUT> not os.path.exists(cal_frame_dir) = " + str(not os.path.exists(cal_frame_dir))+"\n")
-         os.makedirs(cal_frame_dir)
+        # Create directory to save calibrated objects
+        cal_frame_dir = os.path.join(_OUT_DIR, anight_base, "cal_frames")
+        log.write("<OUTPUT> cal_frame_dir = {}\n".format(cal_frame_dir))
+        if not os.path.exists(cal_frame_dir):
+             log.write("<OUTPUT> not os.path.exists(cal_frame_dir) = {}\n".format(not os.path.exists(cal_frame_dir)))
+             os.makedirs(cal_frame_dir)
 
-    # Calibrate object frames
-    for obj in obj_dirs:
-        log.write("<OUTPUT> obj = " + str(obj)+"\n")
-        object_list = glob.glob(os.path.join(_IN_DIR, obj, "*.fit*"))
-        log.write("<OUTPUT> object_list = " + str(object_list)+"\n")
-        print("<STATUS> Running redux on " + str(object_list))
-        do_calibrate(object_list, master_flat, master_dark, obj, cal_frame_dir)
+        # Calibrate object frames
+        for obj in obj_dirs:
+            log.write("<OUTPUT> obj = {}\n".format(obj))
+            object_list = glob.glob(os.path.join(anight, obj, "*.fit*"))
+            log.write("<OUTPUT> object_list = {}\n".format(object_list))
+            print("<STATUS> Running redux on {}".format(object_list))
+            do_calibrate(object_list, master_flat, master_dark, obj, cal_frame_dir)
+
 
 if __name__ == '__main__':
 
