@@ -70,11 +70,12 @@ def do_flat_combine(flat_list, master_dark, master_frame_dir):
     Returns:
         a CCDData object containing the master flat.
     """
-    if not os.path.isfile(master_frame_dir+"/master-flat.fit"):
+    out_filename = os.path.join(master_frame_dir, "master-flat.fit")
+    if not os.path.isfile(out_filename):
 
-        log.write("<OUTPUT> Combining flats"+"\n")
+        log.write("<OUTPUT> Combining flats\n")
         # Median combine flats
-        combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu", clobber=True)
+        combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu")
 
         log.write("<OUTPUT> Subtracting dark from flat"+"\n")
         # Subtract master dark from combined flat
@@ -82,15 +83,15 @@ def do_flat_combine(flat_list, master_dark, master_frame_dir):
 
         log.write("<OUTPUT> Writing master flat to disk"+"\n")
         # Write master flat to disk
-        ccdproc.fits_ccddata_writer(master_flat, master_frame_dir+"/master-flat.fit")
+        ccdproc.fits_ccddata_writer(master_flat, out_filename)
 
     else:
 
         log.write("<OUTPUT> Skipping flat combine: assigning existing file 'master-flat.fit'"+"\n")
         # Read master flat from disk and assign to variable
-        master_flat = ccdproc.fits_ccddata_reader(master_frame_dir+"/master-flat.fit")
+        master_flat = ccdproc.fits_ccddata_reader(out_filename)
 
-    return master_flat
+    return master_flat, out_filename
 
 
 def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_dir):
