@@ -11,68 +11,48 @@ class TestDoDarkCombine(unittest.TestCase):
     def setUp(self):
         from numpy.random import normal
         num_test_dark_files = 3
-        self.darkfilenames = []
+        self.darks = []
+        self.nrows = 10
+        self.ncols = 10
         for i in range(num_test_dark_files):
-            hdu = fits.PrimaryHDU(data=normal(loc=100, scale=5, size=(10, 10)))
-            darkname = "dark_test_{:02d}.fits".format(i)
-            self.darkfilenames.append(darkname)
-            hdu.writeto(darkname)
-        self.darkmaster_fname = None
+            self.darks.append(
+                ccdproc.CCDData(
+                    normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
+                    unit='adu',
+                    )
+                )
         imageredux.log = open("log.txt", "w")
+        self.darkmaster_fname = None
 
     def tearDown(self):
-        for afile in self.darkfilenames:
-            os.remove(afile)
         if os.path.exists(self.darkmaster_fname):
             os.remove(self.darkmaster_fname)
         imageredux.log.close()
         if os.path.exists("log.txt"):
             os.remove("log.txt")
 
-    def test_doDarkCombine(self):
-        darkmaster = imageredux.do_dark_combine(self.darkfilenames, ".")
-        self.darkmaster_fname = os.path.join(".", "master-dark.fit")
+    def test_do_dark_combine(self):
+        darkmaster, dark_fname = imageredux.do_dark_combine(self.darks, ".")
+        self.darkmaster_fname = dark_fname
+        # Test if darkmaster is correct type
         self.assertTrue(isinstance(darkmaster, ccdproc.CCDData))
+        # Test if darkmaster shape is correct shape
+        self.assertEqual(darkmaster.shape, (self.nrows, self.ncols))
+        # Test if darkmaster file was saved
+        self.assertTrue(os.path.exists(dark_fname))
+        # Test if darkmaster file has correct shape
+        self.assertEqual(fits.getdata(dark_fname).shape, (self.nrows, self.ncols))
 
 
-class TestDoCalibrate(unittest.TestCase):
+class TestFlatCombine(unittest.TestCase):
     def setUp(self):
-        from numpy.random import normal
-        image_hdu = fits.PrimaryHDU(data=normal(loc=100, scale=5, size=(10, 10)))
-        image_hdu.header['EXPTIME'] = 60.0
-        self.image_name = "image.fits"
-        image_hdu.writeto(self.image_name)
-
-        dark_hdu = fits.PrimaryHDU(data=normal(loc=100, scale=5, size=(10, 10)))
-        dark_hdu.header['EXPTIME'] = 60.0
-        self.dark_name = "dark_master.fits"
-        dark_hdu.writeto(self.dark_name)
-
-        flat_hdu = fits.PrimaryHDU(data=normal(loc=100, scale=5, size=(10, 10)))
-        self.flat_name = "flat_master.fits"
-        flat_hdu.writeto(self.flat_name)
-
-        self.redux_name = None
-
-        imageredux.log = open("log.txt", "w")
+        pass
 
     def tearDown(self):
-        os.remove(self.image_name)
-        os.remove(self.dark_name)
-        os.remove(self.flat_name)
-        if self.redux_name:
-            os.remove(self.redux_name)
-        imageredux.log.close()
-        os.remove("log.txt")
+        pass
 
-    def test_redux(self):
-        self.redux = imageredux.do_calibrate(
-            self.image_name,
-            self.dark_name,
-            self.flat_name,
-            "test_object", "./",
-            )
-        # self.assertTrue(isinstance(self.redux, ccdproc.CCDData))
+    def test_do_flat_combine(self):
+        pass
 
 
 if __name__ == "__main__":

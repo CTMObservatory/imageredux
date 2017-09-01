@@ -55,7 +55,7 @@ def do_dark_combine(dark_list, master_frame_dir):
         # Read master dark from disk and assign to variable
         master_dark = ccdproc.fits_ccddata_reader(out_filename)
 
-    return master_dark
+    return master_dark, out_filename
 
 
 def do_flat_combine(flat_list, master_dark, master_frame_dir):
