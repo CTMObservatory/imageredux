@@ -246,26 +246,25 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Arguments for imageredux')
 
     parser.add_argument(
-        '-i', default='./',
+        '-i', default='.',
         help='Path to root directory where FITS files are. Default is current dir.',
         metavar='DIR',
         dest='input_path',
         )
 
     parser.add_argument(
-        '-o', default='./',
+        '-o', default='.',
         help='Path where intermediate and final files will be saved. Default is current dir.',
         metavar='DIR',
         dest='output_path',
         )
 
-    log = open("log.txt", "a")
-
     args = parser.parse_args()
-    log.write("<OUTPUT> args = " + str(args)+"\n")
-
     _OUT_DIR = args.output_path
     _IN_DIR = args.input_path
+
+    log = open(os.path.join(_OUT_DIR, "log.txt"), "a")
+    log.write("<OUTPUT> args = " + str(args)+"\n")
     log.write("<OUTPUT> _OUT_DIR = " + str(_OUT_DIR)+"\n")
     log.write("<OUTPUT> _IN_DIR =ls " + str(_IN_DIR)+"\n")
 
