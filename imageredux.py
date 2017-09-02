@@ -132,13 +132,18 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
             else:
                 log.write("<OUTPUT> Subtracting dark from " + str(frame)+"\n")
                 # Subtract dark from object
-                object_min_dark = ccdproc.subtract_dark(object_frame, master_dark, data_exposure=object_frame.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
+                object_min_dark = ccdproc.subtract_dark(
+                    object_frame, master_dark,
+                    data_exposure=object_frame.header["exposure"] * u.second,
+                    dark_exposure=master_dark.header["exposure"] * u.second,
+                    scale=True,
+                    )
 
-                log.write("<OUTPUT> Dividing " + str(frame) + " by flat"+"\n")
+                log.write("<OUTPUT> Dividing {} by flat\n".format(frame))
                 # Divide object by flat
                 cal_object_frame = ccdproc.flat_correct(object_min_dark, master_flat)
 
-                log.write("<OUTPUT> Writing object " + str(frame) + " to disk"+"\n")
+                log.write("<OUTPUT> Writing object {} to disk\n".format(frame))
                 # Write calibrated object to disk
                 ccdproc.fits_ccddata_writer(cal_object_frame, cal_frame_dir+"/"+cal_dir+"/cal-"+str(frame))
 
@@ -181,6 +186,7 @@ def do_file_list():
 
     return obs_by_date
 
+
 def main():
 
     # Fancy header
@@ -211,8 +217,8 @@ def main():
                 os.makedirs(master_frame_dir)
 
             # Create master calibration frames
-            master_dark = do_dark_combine(dark_list, master_frame_dir)
-            master_flat = do_flat_combine(flat_list, master_dark, master_frame_dir)
+            master_dark, __ = do_dark_combine(dark_list, master_frame_dir)
+            master_flat, __ = do_flat_combine(flat_list, master_dark, master_frame_dir)
 
             # Create list of object directories
             obj_dirs = [f for f in os.listdir(anight)
@@ -239,6 +245,7 @@ def main():
         else:
             log.write("<OUTPUT> Skipping directory: {}\n".format(anight))
             print("<STATUS> Skipping directory: {}".format(anight))
+
 
 if __name__ == '__main__':
 

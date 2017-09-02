@@ -5,11 +5,11 @@ import imageredux as redux
 import unittest
 from astropy.io import fits
 import ccdproc
+from numpy.random import normal
 
 
 class TestCombinations(unittest.TestCase):
     def setUp(self):
-        from numpy.random import normal
         num_test_files = 3
         self.ccds = []
         self.nrows = 10
@@ -21,22 +21,18 @@ class TestCombinations(unittest.TestCase):
                 )
             ccd.header = {'exposure': 60.0}
             self.ccds.append(ccd)
-        redux.log = open("log.txt", "w")
         self.darkmaster_fname = None
         self.flatmaster_fname = None
         self.out_dir = "outputs"
         if not os.path.exists(self.out_dir):
             os.makedirs(self.out_dir)
+        redux.log = open(os.path.join(self.out_dir, "log.txt"), "w")
 
     def tearDown(self):
-        if self.darkmaster_fname and os.path.exists(self.darkmaster_fname):
-            os.remove(self.darkmaster_fname)
-        if self.flatmaster_fname and os.path.exists(self.flatmaster_fname):
-            os.remove(self.flatmaster_fname)
         redux.log.close()
-        if os.path.exists("log.txt"):
-            os.remove("log.txt")
         if os.path.exists(self.out_dir):
+            for afile in os.listdir(self.out_dir):
+                os.remove(os.path.join(self.out_dir, afile))
             os.rmdir(self.out_dir)
 
     def test_do_dark_combine(self):
@@ -52,7 +48,6 @@ class TestCombinations(unittest.TestCase):
         self.assertEqual(fits.getdata(dark_fname).shape, (self.nrows, self.ncols))
 
     def test_do_flat_combine(self):
-        from numpy.random import normal
         dark_master = ccdproc.CCDData(
             normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
             unit='adu',
