@@ -30,10 +30,9 @@ class TestCombinations(unittest.TestCase):
 
     def tearDown(self):
         redux.log.close()
+        import shutil
         if os.path.exists(self.out_dir):
-            for afile in os.listdir(self.out_dir):
-                os.remove(os.path.join(self.out_dir, afile))
-            os.rmdir(self.out_dir)
+            shutil.rmtree(self.out_dir)
 
     def test_do_dark_combine(self):
         darkmaster, dark_fname = redux.do_dark_combine(self.ccds, self.out_dir)
@@ -65,6 +64,55 @@ class TestCombinations(unittest.TestCase):
         self.assertTrue(os.path.exists(flat_fname))
         # Test if flatmaster file has correct shape
         self.assertEqual(fits.getdata(flat_fname).shape, (self.nrows, self.ncols))
+
+
+class TestCalibrate(unittest.TestCase):
+    def setUp(self):
+        num_test_files = 3
+        self.ccds = []
+        self.nrows = 10
+        self.ncols = 10
+        self.out_dir = "outputs"
+        self.in_dir = "inputs"
+        self.obj_name = "ngc4993"
+        if not os.path.exists(self.out_dir):
+            os.makedirs(self.out_dir)
+        if not os.path.exists(self.in_dir):
+            os.makedirs(self.in_dir)
+        for i in range(num_test_files):
+            ccd_hdu = fits.PrimaryHDU(
+                data=normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
+                )
+            ccd_hdu.header['EXPOSURE'] = 60.0
+            fname = os.path.join(
+                self.in_dir, "{}_{:02d}.fits".format(self.obj_name, i),
+                )
+            ccd_hdu.writeto(fname)
+            self.ccds.append(fname)
+        redux.log = open(os.path.join(self.out_dir, "log.txt"), "w")
+
+    def tearDown(self):
+        redux.log.close()
+        import shutil
+        if os.path.exists(self.out_dir):
+            shutil.rmtree(self.out_dir)
+        if os.path.exists(self.in_dir):
+            shutil.rmtree(self.in_dir)
+
+    def test_do_calibrate(self):
+        dark_master = ccdproc.CCDData(
+            normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
+            unit='adu',
+            )
+        dark_master.header = {'exposure': 60.0}
+        flat_master = ccdproc.CCDData(
+            normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
+            unit='adu',
+            )
+        flat_master.header = {'exposure': 60.0}
+        redux.do_calibrate(
+            self.ccds, flat_master, dark_master, self.obj_name, self.out_dir,
+            )
 
 
 if __name__ == "__main__":

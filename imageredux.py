@@ -43,7 +43,7 @@ def do_dark_combine(dark_list, master_frame_dir):
 
         log.write("<OUTPUT> Combining darks\n")
         # Median combine darks
-        master_dark = ccdproc.combine(dark_list, method="median", unit="u.adu", clobber=True)
+        master_dark = ccdproc.combine(dark_list, method="median", unit="adu", clobber=True)
 
         log.write("<OUTPUT> Writing master dark to disk\n")
         # Write master dark to disk
@@ -75,7 +75,7 @@ def do_flat_combine(flat_list, master_dark, master_frame_dir):
 
         log.write("<OUTPUT> Combining flats\n")
         # Median combine flats
-        combined_flat = ccdproc.combine(flat_list, method="median", unit="u.adu")
+        combined_flat = ccdproc.combine(flat_list, method="median", unit="adu")
 
         log.write("<OUTPUT> Subtracting dark from flat"+"\n")
         # Subtract master dark from combined flat
@@ -122,7 +122,7 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
 
             log.write("<OUTPUT> Reading object {}".format(frame))
             # Read CCDData object
-            object_frame = ccdproc.fits_ccddata_reader(item, unit="u.adu")
+            object_frame = ccdproc.fits_ccddata_reader(item, unit="adu")
 
             # Check if object frame is same size as master frames
             if not object_frame.shape == master_dark.shape:
