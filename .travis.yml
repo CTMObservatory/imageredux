@@ -14,7 +14,7 @@ install:
 
 script:
   - python tests/test_imageredux.py -v
-  - coverage run --source imageredux.py tests/test_imageredux.py
+  - coverage run --source=imageredux tests/test_imageredux.py -v
 
 after_success:
   - codecov
