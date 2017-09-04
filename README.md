@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/toros-astro/imageredux.svg?branch=master)](https://travis-ci.org/toros-astro/imageredux)
-
+[![codecov](https://codecov.io/gh/toros-astro/imageredux/branch/master/graph/badge.svg)](https://codecov.io/gh/toros-astro/imageredux)s
 # imageredux
 Script to reduce images for LIGO counterpart searches.
 
