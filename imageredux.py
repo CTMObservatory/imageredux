@@ -105,7 +105,7 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
         cal_frame_dir: a string identifying the output path for writing to disk
 
     Returns:
-        None
+        A list of the calibrated CCDData objects and a list of the file paths where they were saved.
     """
 
     cal_dir = "cal_{}".format(object_name)
@@ -114,11 +114,13 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
     if not os.path.exists(check_path):
         os.makedirs(check_path)
 
+    processed_frames, processed_fnames = [], []
+
     # Calibration begins if directory cal_object exists and is empty
     if not os.listdir(check_path):
         for item in object_list:
 
-            frame = os.path.split(item)[1]
+            frame = os.path.basename(item)
 
             log.write("<OUTPUT> Reading object {}".format(frame))
             # Read CCDData object
@@ -130,7 +132,7 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
                 print("<STATUS> Skipping object calibration... Object frame is not same shape as Master frames")
                 break
             else:
-                log.write("<OUTPUT> Subtracting dark from " + str(frame)+"\n")
+                log.write("<OUTPUT> Subtracting dark from {}\n".format(frame))
                 # Subtract dark from object
                 object_min_dark = ccdproc.subtract_dark(
                     object_frame, master_dark,
@@ -145,7 +147,12 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
 
                 log.write("<OUTPUT> Writing object {} to disk\n".format(frame))
                 # Write calibrated object to disk
-                ccdproc.fits_ccddata_writer(cal_object_frame, cal_frame_dir+"/"+cal_dir+"/cal-"+str(frame))
+                out_filename = os.path.join(check_path, "cal-{}".format(frame))
+                ccdproc.fits_ccddata_writer(cal_object_frame, out_filename)
+                processed_frames.append(cal_object_frame)
+                processed_fnames.append(out_filename)
+
+    return processed_frames, processed_fnames
 
 
 def do_file_list():
