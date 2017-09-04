@@ -110,9 +110,19 @@ class TestCalibrate(unittest.TestCase):
             unit='adu',
             )
         flat_master.header = {'exposure': 60.0}
-        redux.do_calibrate(
+        cal_ccds, cal_fnames = redux.do_calibrate(
             self.ccds, flat_master, dark_master, self.obj_name, self.out_dir,
             )
+        for acal in cal_ccds:
+            # Test if it's correct type
+            self.assertTrue(isinstance(acal, ccdproc.CCDData))
+            # Test if its shape is correct
+            self.assertEqual(acal.shape, (self.nrows, self.ncols))
+        for afile in cal_fnames:
+            # Test if file was saved
+            self.assertTrue(os.path.exists(afile))
+            # Test if file has correct shape
+            self.assertEqual(fits.getdata(afile).shape, (self.nrows, self.ncols))
 
 
 if __name__ == "__main__":
