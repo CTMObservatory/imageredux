@@ -10,11 +10,11 @@ from numpy.random import normal
 
 class TestCombinations(unittest.TestCase):
     def setUp(self):
-        num_test_files = 3
+        self.num_test_files = 3
         self.ccds = []
         self.nrows = 10
         self.ncols = 10
-        for i in range(num_test_files):
+        for i in range(self.num_test_files):
             ccd = ccdproc.CCDData(
                 normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
                 unit='adu',
@@ -68,7 +68,7 @@ class TestCombinations(unittest.TestCase):
 
 class TestCalibrate(unittest.TestCase):
     def setUp(self):
-        num_test_files = 3
+        self.num_test_files = 3
         self.ccds = []
         self.nrows = 10
         self.ncols = 10
@@ -79,7 +79,7 @@ class TestCalibrate(unittest.TestCase):
             os.makedirs(self.out_dir)
         if not os.path.exists(self.in_dir):
             os.makedirs(self.in_dir)
-        for i in range(num_test_files):
+        for i in range(self.num_test_files):
             ccd_hdu = fits.PrimaryHDU(
                 data=normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
                 )
@@ -127,7 +127,7 @@ class TestCalibrate(unittest.TestCase):
 
 class TestMain(unittest.TestCase):
     def setUp(self):
-        num_test_files = 3
+        self.num_test_files = 3
         self.nrows = 10
         self.ncols = 10
         self.out_dir = "outputs"
@@ -136,14 +136,14 @@ class TestMain(unittest.TestCase):
         self.in_dir = "inputs"
         if not os.path.exists(self.in_dir):
             os.makedirs(self.in_dir)
-        nights = ["20170113", "20170317", "20170319"]
-        for anight in nights:
+        self.nights = ["20170113", "20170317", "20170319"]
+        for anight in self.nights:
             night_dir = os.path.join(self.in_dir, anight)
             os.makedirs(night_dir)
             os.makedirs(os.path.join(night_dir, "dark"))
             os.makedirs(os.path.join(night_dir, "flat"))
             # Generate dark frames
-            for i in range(num_test_files):
+            for i in range(self.num_test_files):
                 drk = fits.PrimaryHDU(
                     normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
                     )
@@ -153,7 +153,7 @@ class TestMain(unittest.TestCase):
                     "dark_{:02d}.fits".format(i)),
                     )
             # Generate flat frames
-            for i in range(num_test_files):
+            for i in range(self.num_test_files):
                 flt = fits.PrimaryHDU(
                     normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
                     )
@@ -163,10 +163,10 @@ class TestMain(unittest.TestCase):
                     "flat_{:02d}.fits".format(i)),
                     )
             # Generate object frames
-            object_names = ["eso364-014", "ngc1341"]
-            for objn in object_names:
+            self.object_names = ["eso364-014", "ngc1341"]
+            for objn in self.object_names:
                 os.makedirs(os.path.join(night_dir, objn))
-                for i in range(num_test_files):
+                for i in range(self.num_test_files):
                     obj = fits.PrimaryHDU(
                         normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
                         )
@@ -189,6 +189,32 @@ class TestMain(unittest.TestCase):
         redux._IN_DIR = self.in_dir
         redux._OUT_DIR = self.out_dir
         redux.main()
+        # Test if all night folders were created
+        self.assertTrue(
+            all([anight in os.listdir(self.out_dir) for anight in self.nights])
+            )
+        for anight in self.nights:
+            night_dir = os.path.join(self.out_dir, anight)
+            self.assertTrue("cal_frames" in os.listdir(night_dir))
+            self.assertTrue("master_frames" in os.listdir(night_dir))
+            self.assertTrue(os.path.exists(
+                os.path.join(night_dir, "master_frames", "master-dark.fit"),
+                ))
+            self.assertTrue(os.path.exists(
+                os.path.join(night_dir, "master_frames", "master-flat.fit"),
+                ))
+            for anobj in self.object_names:
+                calframe_dir = os.path.join(
+                    night_dir, "cal_frames", "cal_{}".format(anobj),
+                    )
+                self.assertTrue(os.path.exists(calframe_dir))
+                for i in range(self.num_test_files):
+                    obj_fname = os.path.join(
+                        calframe_dir, "cal-{}_{:02d}.fits".format(anobj, i),
+                        )
+                    self.assertTrue(os.path.exists(obj_fname))
+
+
 
 if __name__ == "__main__":
     unittest.main()
