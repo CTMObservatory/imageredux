@@ -197,12 +197,20 @@ class TestMain(unittest.TestCase):
             night_dir = os.path.join(self.out_dir, anight)
             self.assertTrue("cal_frames" in os.listdir(night_dir))
             self.assertTrue("master_frames" in os.listdir(night_dir))
-            self.assertTrue(os.path.exists(
-                os.path.join(night_dir, "master_frames", "master-dark.fit"),
-                ))
-            self.assertTrue(os.path.exists(
-                os.path.join(night_dir, "master_frames", "master-flat.fit"),
-                ))
+            masterdark_path = os.path.join(
+                night_dir, "master_frames", "master-dark.fit")
+            self.assertTrue(os.path.exists(masterdark_path))
+            self.assertEqual(
+                fits.getdata(masterdark_path).shape,
+                (self.nrows, self.ncols),
+                )
+            masterflat_path = os.path.join(
+                night_dir, "master_frames", "master-flat.fit")
+            self.assertTrue(os.path.exists(masterflat_path))
+            self.assertEqual(
+                fits.getdata(masterflat_path).shape,
+                (self.nrows, self.ncols),
+                )
             for anobj in self.object_names:
                 calframe_dir = os.path.join(
                     night_dir, "cal_frames", "cal_{}".format(anobj),
@@ -213,7 +221,10 @@ class TestMain(unittest.TestCase):
                         calframe_dir, "cal-{}_{:02d}.fits".format(anobj, i),
                         )
                     self.assertTrue(os.path.exists(obj_fname))
-
+                    self.assertEqual(
+                        fits.getdata(obj_fname).shape,
+                        (self.nrows, self.ncols),
+                        )
 
 
 if __name__ == "__main__":
