@@ -125,5 +125,70 @@ class TestCalibrate(unittest.TestCase):
             self.assertEqual(fits.getdata(afile).shape, (self.nrows, self.ncols))
 
 
+class TestMain(unittest.TestCase):
+    def setUp(self):
+        num_test_files = 3
+        self.nrows = 10
+        self.ncols = 10
+        self.out_dir = "outputs"
+        if not os.path.exists(self.out_dir):
+            os.makedirs(self.out_dir)
+        self.in_dir = "inputs"
+        if not os.path.exists(self.in_dir):
+            os.makedirs(self.in_dir)
+        nights = ["20170113", "20170317", "20170319"]
+        for anight in nights:
+            night_dir = os.path.join(self.in_dir, anight)
+            os.makedirs(night_dir)
+            os.makedirs(os.path.join(night_dir, "dark"))
+            os.makedirs(os.path.join(night_dir, "flat"))
+            # Generate dark frames
+            for i in range(num_test_files):
+                drk = fits.PrimaryHDU(
+                    normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
+                    )
+                drk.header['exposure'] = 60.0
+                drk.writeto(
+                    os.path.join(night_dir, "dark",
+                    "dark_{:02d}.fits".format(i)),
+                    )
+            # Generate flat frames
+            for i in range(num_test_files):
+                flt = fits.PrimaryHDU(
+                    normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
+                    )
+                flt.header['exposure'] = 60.0
+                flt.writeto(
+                    os.path.join(night_dir, "flat",
+                    "flat_{:02d}.fits".format(i)),
+                    )
+            # Generate object frames
+            object_names = ["eso364-014", "ngc1341"]
+            for objn in object_names:
+                os.makedirs(os.path.join(night_dir, objn))
+                for i in range(num_test_files):
+                    obj = fits.PrimaryHDU(
+                        normal(loc=100, scale=5, size=(self.nrows, self.ncols)),
+                        )
+                    obj.header['exposure'] = 60.0
+                    obj.writeto(
+                        os.path.join(night_dir, objn,
+                        "{}_{:02d}.fits".format(objn, i)),
+                        )
+        redux.log = open(os.path.join(self.out_dir, "log.txt"), "w")
+
+    def tearDown(self):
+        redux.log.close()
+        import shutil
+        if os.path.exists(self.out_dir):
+            shutil.rmtree(self.out_dir)
+        if os.path.exists(self.in_dir):
+            shutil.rmtree(self.in_dir)
+
+    def test_main(self):
+        redux._IN_DIR = self.in_dir
+        redux._OUT_DIR = self.out_dir
+        redux.main()
+
 if __name__ == "__main__":
     unittest.main()
