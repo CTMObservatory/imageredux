@@ -159,7 +159,7 @@ def do_imalign(source_image, ref_image):
     Align two images using 3-point asterism provided by Astroalign script
 
     Args:
-        source_image: the FITS file that needs to be aligned
+        source_image: the FITS file that requires alignment
         ref_image: the FITS file to which the source image will be aligned
 
     Returns:
@@ -176,6 +176,30 @@ def do_imalign(source_image, ref_image):
 	aligned_fits_frame = ccdproc.fits_ccddata_writer(aligned_image,"aligned_image.fit")
 
 	return aligned_image
+
+
+def do_imsub(source_image, ref_image):
+	"""
+	Subtract two images using Bramich method of Optimal Image Subtraction (OIS) script
+
+	Args:
+		source_image: the FITS file that will be subtracted
+		ref_image: the FITS file from which the source will be subtracted
+
+	Returns:
+		diff_image: a CCDData object of the subtracted images
+	"""
+
+	print("<STATUS> Subtracting image...")
+	diff_image = ois.optimal_system(test_image.data, ref_image.data)[0]
+
+	print("<STATUS> Converting array to CCDData object...")
+	diff_image = ccdproc.CCDData(diff_image, unit="adu")
+
+	print("<STATUS> Writing difference frame to disk...")
+	result_image = ccdproc.fits_ccddata_writer(diff_image,"diff_image.fit")
+
+	return diff_image
 
 
 def do_file_list():
