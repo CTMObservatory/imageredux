@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-imageredux
-==========
 
-Script to reduce images for LIGO counterpart searches.
+"""
+imageredux - Script to reduce images for LIGO counterpart searches.
 
 Copyright (c) 2017-2018, Martin Beroiz, Richard Camuccio, Juan Garcia,
 Pamela Lara, Moises Castillo
@@ -21,6 +19,7 @@ import glob
 import os
 from pathlib import Path
 from astropy.table import Table, Column
+import astroalign as aa
 
 _IN_DIR = None
 "The path to the images directory."
@@ -153,6 +152,30 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
                 processed_fnames.append(out_filename)
 
     return processed_frames, processed_fnames
+
+
+def do_imalign(source_image, ref_image):
+    """
+    Align two images using 3-point asterism provided by Astroalign script
+
+    Args:
+        source_image: the FITS file that needs to be aligned
+        ref_image: the FITS file to which the source image will be aligned
+
+    Returns:
+    	aligned_image: a CCDData object of the aligned source frame
+    """
+
+	print("<STATUS> Aligning image...")
+	aligned_image = aa.register(source_image.data, ref_image.data)
+
+	print("<STATUS> Converting array to CCDData object...")
+	aligned_image = ccdproc.CCDData(aligned_image, unit="adu")
+
+	print("<STATUS> Writing aligned frame to disk...")
+	aligned_fits_frame = ccdproc.fits_ccddata_writer(aligned_image,"aligned_image.fit")
+
+	return aligned_image
 
 
 def do_file_list():
