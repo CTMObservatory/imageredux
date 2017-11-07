@@ -106,7 +106,6 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
     Returns:
         A list of the calibrated CCDData objects and a list of the file paths where they were saved.
     """
-
     cal_dir = "cal_{}".format(object_name)
     check_path = os.path.join(cal_frame_dir, cal_dir)
 
@@ -154,57 +153,10 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
     return processed_frames, processed_fnames
 
 
-def do_imalign(source_image, ref_image):
-    """
-    Align two images using 3-point asterism provided by Astroalign script
-
-    Args:
-        source_image: the FITS file that requires alignment
-        ref_image: the FITS file to which the source image will be aligned
-
-    Returns:
-    	aligned_image: a CCDData object of the aligned source frame
-    """
-
-	print("<STATUS> Aligning image...")
-	aligned_image = aa.register(source_image.data, ref_image.data)
-
-	print("<STATUS> Converting array to CCDData object...")
-	aligned_image = ccdproc.CCDData(aligned_image, unit="adu")
-
-	print("<STATUS> Writing aligned frame to disk...")
-	aligned_fits_frame = ccdproc.fits_ccddata_writer(aligned_image,"aligned_image.fit")
-
-	return aligned_image
-
-
-def do_imsub(source_image, ref_image):
-	"""
-	Subtract two images using Bramich method of Optimal Image Subtraction (OIS) script
-
-	Args:
-		source_image: the FITS file that will be subtracted
-		ref_image: the FITS file from which the source will be subtracted
-
-	Returns:
-		diff_image: a CCDData object of the subtracted images
-	"""
-
-	print("<STATUS> Subtracting image...")
-	diff_image = ois.optimal_system(test_image.data, ref_image.data)[0]
-
-	print("<STATUS> Converting array to CCDData object...")
-	diff_image = ccdproc.CCDData(diff_image, unit="adu")
-
-	print("<STATUS> Writing difference frame to disk...")
-	result_image = ccdproc.fits_ccddata_writer(diff_image,"diff_image.fit")
-
-	return diff_image
-
-
 def do_file_list():
-
-    """Make array of file paths in this directory and all subdirectories, recursively and filter by suffix.
+    """
+    Make array of file paths in this directory and all subdirectories, recursively and filter by suffix.
+   
     Assumes path:
         root_path/ObservationDate/objectFolder/objectFrames
     or
@@ -251,8 +203,9 @@ def main():
                    if os.path.isdir(os.path.join(_IN_DIR, anight))]
 
     for anight in nights_dirs:
-        # I use this to create the output paths
+        # Create output paths
         anight_base = os.path.basename(os.path.normpath(anight))
+
         # Create lists
         bias_list = glob.glob(os.path.join(anight, "bias", "*bias*.fit*"))
         dark_list = glob.glob(os.path.join(anight, "dark", "*dark*.fit*"))
