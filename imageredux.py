@@ -207,9 +207,9 @@ def main():
         anight_base = os.path.basename(os.path.normpath(anight))
 
         # Create lists
-        bias_list = glob.glob(os.path.join(anight, "bias", "*bias*.fit*"))
-        dark_list = glob.glob(os.path.join(anight, "dark", "*dark*.fit*"))
-        flat_list = glob.glob(os.path.join(anight, "flat", "*flat*.fit*"))
+        bias_list = glob.glob(os.path.join(anight, "bias", "*[bB]ias*.fit*"))
+        dark_list = glob.glob(os.path.join(anight, "dark", "*[dD]ark*.fit*"))
+        flat_list = glob.glob(os.path.join(anight, "flat", "*[fF]lat*.fit*"))
 
         log.write("<OUTPUT> bias_list = {}\n".format(bias_list))
         log.write("<OUTPUT> dark_list = {}\n".format(dark_list))
@@ -285,5 +285,5 @@ if __name__ == '__main__':
 
     main()
 
+    log.write("<STATUS> Image redux complete")
     log.close()
-    print("<STATUS> Image redux complete")
