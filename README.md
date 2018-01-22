@@ -14,26 +14,27 @@ The script will assume the following directory tree structure:
 
 ```
 root_path
-   |--- bias
-   |    |--- *bias*.fits
-   |    |--- ...
-   |
-   |--- dark
-   |    |--- *dark*.fits
-   |    |--- ...
-   |
-   |--- flat
-   |    |--- *flat*.fits
-   |    |--- ...
-   |
-   |--- object1
-   |    |--- *.fits
-   |    |--- ...
-   |
-   |--- object2
-   |    |--- *.fits
-   |    |--- ...
-   |
+    |---20170113
+        |--- bias
+        |    |--- *bias*.fits
+        |    |--- ...
+        |
+        |--- dark
+        |    |--- *dark*.fits
+        |    |--- ...
+        |
+        |--- flat
+        |    |--- *flat*.fits
+        |    |--- ...
+        |
+        |--- object1
+        |    |--- *.fits
+        |    |--- ...
+        |
+        |--- object2
+        |    |--- *.fits
+        |    |--- ...
+        |
    ...
 ```
 
