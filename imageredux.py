@@ -19,7 +19,11 @@ import glob
 import os
 from pathlib import Path
 from astropy.table import Table, Column
-import astroalign as aa
+import logging
+
+
+# create logger
+logger = logging.getLogger(__name__)
 
 _IN_DIR = None
 "The path to the images directory."
@@ -40,17 +44,17 @@ def do_dark_combine(dark_list, master_frame_dir):
     out_filename = os.path.join(master_frame_dir, "master-dark.fit")
     if not os.path.isfile(out_filename):
 
-        log.write("<OUTPUT> Combining darks\n")
+        logger.info("Combining darks")
         # Median combine darks
         master_dark = ccdproc.combine(dark_list, method="median", unit="adu", clobber=True)
 
-        log.write("<OUTPUT> Writing master dark to disk\n")
+        logger.info("Writing master dark to disk")
         # Write master dark to disk
         ccdproc.fits_ccddata_writer(master_dark, out_filename)
 
     else:
 
-        log.write("<OUTPUT> Skipping dark combine: assigning existing file 'master-dark.fit'\n")
+        logger.warning("Skipping dark combine: assigning existing file 'master-dark.fit'")
         # Read master dark from disk and assign to variable
         master_dark = ccdproc.fits_ccddata_reader(out_filename)
 
@@ -72,21 +76,25 @@ def do_flat_combine(flat_list, master_dark, master_frame_dir):
     out_filename = os.path.join(master_frame_dir, "master-flat.fit")
     if not os.path.isfile(out_filename):
 
-        log.write("<OUTPUT> Combining flats\n")
+        logger.info("Combining flats")
         # Median combine flats
         combined_flat = ccdproc.combine(flat_list, method="median", unit="adu")
 
-        log.write("<OUTPUT> Subtracting dark from flat"+"\n")
+        logger.info("Subtracting dark from flat")
         # Subtract master dark from combined flat
-        master_flat = ccdproc.subtract_dark(combined_flat, master_dark, data_exposure=combined_flat.header["exposure"]*u.second, dark_exposure=master_dark.header["exposure"]*u.second, scale=True)
+        master_flat = ccdproc.subtract_dark(
+            combined_flat, master_dark,
+            data_exposure=combined_flat.header["exposure"] * u.second,
+            dark_exposure=master_dark.header["exposure"] * u.second,
+            scale=True)
 
-        log.write("<OUTPUT> Writing master flat to disk"+"\n")
+        logger.info("Writing master flat to disk")
         # Write master flat to disk
         ccdproc.fits_ccddata_writer(master_flat, out_filename)
 
     else:
 
-        log.write("<OUTPUT> Skipping flat combine: assigning existing file 'master-flat.fit'"+"\n")
+        logger.warning("Skipping flat combine: assigning existing file 'master-flat.fit'")
         # Read master flat from disk and assign to variable
         master_flat = ccdproc.fits_ccddata_reader(out_filename)
 
@@ -120,17 +128,16 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
 
             frame = os.path.basename(item)
 
-            log.write("<OUTPUT> Reading object {}".format(frame))
+            logger.info("Reading object {}".format(frame))
             # Read CCDData object
             object_frame = ccdproc.fits_ccddata_reader(item, unit="adu")
 
             # Check if object frame is same size as master frames
             if not object_frame.shape == master_dark.shape:
-                log.write("<STATUS> Skipping object calibration... Object frame is not same shape as Master frames\n")
-                print("<STATUS> Skipping object calibration... Object frame is not same shape as Master frames")
+                logger.warning("Skipping object calibration... Object frame is not same shape as Master frames")
                 break
             else:
-                log.write("<OUTPUT> Subtracting dark from {}\n".format(frame))
+                logger.info("Subtracting dark from {}".format(frame))
                 # Subtract dark from object
                 object_min_dark = ccdproc.subtract_dark(
                     object_frame, master_dark,
@@ -139,11 +146,11 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
                     scale=True,
                     )
 
-                log.write("<OUTPUT> Dividing {} by flat\n".format(frame))
+                logger.info("Dividing {} by flat".format(frame))
                 # Divide object by flat
                 cal_object_frame = ccdproc.flat_correct(object_min_dark, master_flat)
 
-                log.write("<OUTPUT> Writing object {} to disk\n".format(frame))
+                logger.info("Writing object {} to disk".format(frame))
                 # Write calibrated object to disk
                 out_filename = os.path.join(check_path, "cal-{}".format(frame))
                 ccdproc.fits_ccddata_writer(cal_object_frame, out_filename)
@@ -196,7 +203,7 @@ def do_file_list():
 def main():
 
     # Fancy header
-    print("<STATUS> Starting image redux")
+    logger.info("Starting image redux")
 
     nights_dirs = [os.path.join(_IN_DIR, anight)
                    for anight in os.listdir(_IN_DIR)
@@ -211,16 +218,16 @@ def main():
         dark_list = glob.glob(os.path.join(anight, "dark", "*[dD]ark*.fit*"))
         flat_list = glob.glob(os.path.join(anight, "flat", "*[fF]lat*.fit*"))
 
-        log.write("<OUTPUT> bias_list = {}\n".format(bias_list))
-        log.write("<OUTPUT> dark_list = {}\n".format(dark_list))
-        log.write("<OUTPUT> flat_list = {}\n".format(flat_list))
+        logger.debug("bias_list = {}".format(bias_list))
+        logger.debug("dark_list = {}".format(dark_list))
+        logger.debug("flat_list = {}".format(flat_list))
 
         if dark_list and flat_list:
             # Create directory to save masters
             master_frame_dir = os.path.join(_OUT_DIR, anight_base, "master_frames")
-            log.write("<OUTPUT> master_frame_dir = {}\n".format(master_frame_dir))
+            logger.info("master_frame_dir = {}".format(master_frame_dir))
             if not os.path.exists(master_frame_dir):
-                log.write("<OUTPUT> not os.path.exists(master_frame_dir) = " + str(not os.path.exists(master_frame_dir))+"\n")
+                logger.info("not os.path.exists(master_frame_dir) = {}".format(not os.path.exists(master_frame_dir)))
                 os.makedirs(master_frame_dir)
 
             # Create master calibration frames
@@ -232,32 +239,29 @@ def main():
                         if os.path.isdir(os.path.join(anight, f)) and
                         f not in ['bias', 'dark', 'flat']]
 
-            log.write("<OUTPUT> obj_dirs = {}\n".format(obj_dirs))
-            log.write("<OUTPUT> (Bool) dir 'master_frame_dir' exists > {}\n".format(os.path.exists("master_frame_dir")))
+            logger.debug("obj_dirs = {}".format(obj_dirs))
+            logger.debug("(Bool) dir 'master_frame_dir' exists > {}".format(os.path.exists("master_frame_dir")))
 
             # Create directory to save calibrated objects
             cal_frame_dir = os.path.join(_OUT_DIR, anight_base, "cal_frames")
-            log.write("<OUTPUT> cal_frame_dir = {}\n".format(cal_frame_dir))
+            logger.info("cal_frame_dir = {}".format(cal_frame_dir))
             if not os.path.exists(cal_frame_dir):
-                 log.write("<OUTPUT> not os.path.exists(cal_frame_dir) = {}\n".format(not os.path.exists(cal_frame_dir)))
+                 logger.debug("not os.path.exists(cal_frame_dir) = {}".format(not os.path.exists(cal_frame_dir)))
                  os.makedirs(cal_frame_dir)
 
             # Calibrate object frames
             for obj in obj_dirs:
-                log.write("<OUTPUT> obj = {}\n".format(obj))
+                logger.info("obj = {}".format(obj))
                 object_list = glob.glob(os.path.join(anight, obj, "*.fit*"))
-                log.write("<OUTPUT> object_list = {}\n".format(object_list))
-                print("<STATUS> Running redux on {}".format(object_list))
+                logger.debug("object_list = {}".format(object_list))
                 do_calibrate(object_list, master_flat, master_dark, obj, cal_frame_dir)
         else:
-            log.write("<OUTPUT> Skipping directory: {}\n".format(anight))
-            print("<STATUS> Skipping directory: {}".format(anight))
+            logger.info("Skipping directory: {}".format(anight))
 
 
 if __name__ == '__main__':
 
     import argparse
-
     parser = argparse.ArgumentParser(description='Arguments for imageredux')
 
     parser.add_argument(
@@ -278,12 +282,27 @@ if __name__ == '__main__':
     _OUT_DIR = args.output_path
     _IN_DIR = args.input_path
 
-    log = open(os.path.join(_OUT_DIR, "log.txt"), "a")
-    log.write("<OUTPUT> args = " + str(args)+"\n")
-    log.write("<OUTPUT> _OUT_DIR = " + str(_OUT_DIR)+"\n")
-    log.write("<OUTPUT> _IN_DIR =ls " + str(_IN_DIR)+"\n")
+
+    logger.setLevel(logging.DEBUG)
+
+    # create a file handler and set level to debug
+    fh = logging.FileHandler(os.path.join(_OUT_DIR, "redux.log"), mode='w')
+    fh.setLevel(logging.DEBUG)
+
+    # create formatter and add it to the logger
+    formatter = logging.Formatter('%(asctime)s %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    
+    # create a console handler and set level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    logger.addHandler(ch)
+
+    logger.debug("args = {}".format(args))
+    logger.debug("_OUT_DIR = {}".format(_OUT_DIR))
+    logger.debug("_IN_DIR =ls {}".format(_IN_DIR))
 
     main()
 
-    log.write("<STATUS> Image redux complete")
-    log.close()
+    logger.info("Image redux complete")
