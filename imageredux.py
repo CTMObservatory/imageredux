@@ -101,7 +101,7 @@ def do_flat_combine(flat_list, master_dark, master_frame_dir):
     return master_flat, out_filename
 
 
-def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_dir, return_fits_obj=False):
+def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_dir, return_fits_objs=False):
     """
     Calibrate a list of images.
 
@@ -155,7 +155,7 @@ def do_calibrate(object_list, master_flat, master_dark, object_name, cal_frame_d
                 # Write calibrated object to disk
                 out_filename = os.path.join(check_path, "cal-{}".format(frame))
                 ccdproc.fits_ccddata_writer(cal_object_frame, out_filename)
-                if return_fits_obj:
+                if return_fits_objs:
                     processed_frames.append(cal_object_frame)
                 processed_fnames.append(out_filename)
 
