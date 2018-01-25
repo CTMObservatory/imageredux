@@ -111,7 +111,7 @@ class TestCalibrate(unittest.TestCase):
             )
         flat_master.header = {'exposure': 60.0}
         cal_ccds, cal_fnames = redux.do_calibrate(
-            self.ccds, flat_master, dark_master, self.obj_name, self.out_dir,
+            self.ccds, flat_master, dark_master, self.obj_name, self.out_dir, True
             )
         for acal in cal_ccds:
             # Test if it's correct type
