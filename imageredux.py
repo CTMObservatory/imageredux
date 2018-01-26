@@ -5,7 +5,7 @@
 imageredux - Script to reduce images for LIGO counterpart searches.
 
 Copyright (c) 2017-2018, Martin Beroiz, Richard Camuccio, Juan Garcia,
-Pamela Lara, Moises Castillo
+Pamela Lara, Moises Castillo, Adam Zadrożny
 
 All rights reserved.
 """
